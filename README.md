@@ -1,6 +1,13 @@
-# Fred's OpenCode Fork — Custom Skills & Semantic Substrate
+# Fred's OpenCode Fork - Custom Skills, Launcher, and Agent Workflow Notes
 
-This is a fork of [OpenCode](https://github.com/anomalyco/opencode) with Fred McCullough's custom additions.
+This is a fork of [OpenCode](https://github.com/anomalyco/opencode) used as an AI engineering workbench. The value here is not the upstream project itself; it is the custom skill library, launcher workflow, semantic retrieval notes, and agent coordination patterns layered on top.
+
+## Why It Matters
+
+- Shows practical customization of an agentic coding workflow.
+- Packages repeatable work into skills instead of one-off prompts.
+- Documents browser automation and multi-agent resource boundaries.
+- Connects retrieval, memory, and human review into the development loop.
 
 ## What's Here
 
@@ -65,3 +72,7 @@ git clone https://github.com/GalToast/opencode-fork
 ## Background
 
 This fork was built during Fred's AI automation engineering work at McCullough Digital, focused on multi-model orchestration, browser automation at scale, and lead intelligence pipelines.
+
+## Recruiter Reading Guide
+
+Start with `opencode-skills/` to see how repeated workflows are made explicit, then read `docs/semantic-substrate-plan.md` and `docs/next-gen-harness-principles.md` for the orchestration thinking. Treat this as a systems-design artifact around agent operations, not as a claim of authorship over the upstream OpenCode project.
