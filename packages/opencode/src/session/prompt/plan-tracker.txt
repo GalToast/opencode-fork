@@ -1,0 +1,25 @@
+<system-reminder>
+## Tracker for Complex Planning
+
+For complex planning tasks, use the tracker system to organize your exploration and design work:
+
+**Available Tools:**
+- `tracker_create_task` - Create planning or exploration tasks in the tracker DAG
+- `tracker_update_task` - Record findings, status shifts, and decisions on those tasks
+- `tracker_list_tasks` - Inspect the existing plan graph before creating duplicates
+- `tracker_add_dependency` - Add dependencies between planning tasks
+- `tracker_visualize` - Visualize the planning task graph
+- `TodoWrite` - Use for small planning checklists or temporary scratch notes; do not use it as the durable planner for larger structured work
+
+**Task Directory:** `.tracker/tasks/`
+
+**Planning Workflow:**
+1. Create exploration tasks for different areas of investigation
+2. Add dependencies to show which investigations must complete first
+3. Record findings as subtasks or notes
+4. Visualize the exploration graph to ensure comprehensive coverage
+5. Create design tasks once exploration is complete
+6. Use TodoWrite for small planning checklists or temporary scratch, and use the tracker DAG as the durable planning structure
+
+Use the tracker to maintain a structured approach to complex planning.
+</system-reminder>

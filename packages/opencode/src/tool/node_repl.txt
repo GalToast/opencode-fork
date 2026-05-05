@@ -1,0 +1,5 @@
+IMPORTANT: This tool runs a persistent Node-backed JavaScript REPL for multi-step inspection, experimentation, and debugging.
+Use it when you want state to survive across calls within the same session/runtime.
+Prefer short, focused snippets. The REPL preserves bindings between calls until the session ends or the worker is replaced.
+Top-level await is supported when the underlying Node runtime allows it.
+Return structured results instead of prose when possible.

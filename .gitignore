@@ -1,0 +1,81 @@
+.DS_Store
+node_modules
+.worktrees
+.sst
+.env
+.idea
+.vscode
+.codex
+.opencode/runtime/
+*~
+playground
+tmp
+dist
+ts-dist
+.turbo
+**/.serena
+.serena/
+/result
+refs
+Session.vim
+/opencode.json
+a.out
+target
+.scripts
+.direnv/
+
+# Local dev files
+opencode-dev
+UPCOMING_CHANGELOG.md
+logs/
+*.bun-build
+tsconfig.tsbuildinfo
+.eslintcache
+test-output*.txt
+test-failures.txt
+test_run*.log
+tsc*.out
+tsc*.txt
+tsc_current_run*.txt
+diff_files.txt
+error_files.txt
+tc3.txt
+tmp*.json
+tmp*.patch
+temp_sync.tsx
+sidebar-plan-tracker-hooks.patch
+
+# Local model/runtime payloads
+ai-models/
+script/searxng/native/
+.tracker/
+
+# Local/private capture artifacts
+packages/opencode/hostinger_mail_*
+packages/opencode/bohemian_tmp.md
+packages/opencode/tmp_bohemian*
+
+# Package-root generated diagnostics and smoke outputs
+packages/opencode/*.out
+packages/opencode/*.log
+packages/opencode/*.json.log
+packages/opencode/*.txt
+
+# Local business outreach artifacts do not belong in this public fork
+outreach/
+packages/opencode/outreach/
+packages/opencode/temp_*_snapshot.md
+.opencode/skills/hostinger-mail-drafts/
+.opencode/skills/lead-*/
+.opencode/skills/leadops-sql/
+.opencode/skills/social-dm-outreach/
+
+# Local agent skill installs and Python virtual environments
+.opencode/skills/
+.opencode/runtime/
+.opencode/mecha/
+script/searxng/native/.venv/
+
+# Local agent context/memory
+/AGENTS.md
+/memory.md

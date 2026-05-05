@@ -1,0 +1,118 @@
+{
+  "taskID": "ses_31d364556ffeWlaT317rg0pMqu",
+  "resultTitle": "live recursive orchestrator smoke",
+  "resultMetadata": {
+    "sessionId": "ses_31d364556ffeWlaT317rg0pMqu",
+    "model": {
+      "providerID": "bailian-coding-plan-test",
+      "modelID": "qwen3.5-plus"
+    },
+    "discipline": "orchestrator",
+    "schedulerLane": "orchestrator_swarm",
+    "rootSupervisorSessionID": "ses_31d364975ffefAz8mMQHFpW3W9",
+    "lineageDepth": 0,
+    "childTaskIDs": [
+      "ses_31d35be0dffehtgeOt1SfZhh4p"
+    ],
+    "lineagePath": [
+      "ses_31d364556ffeWlaT317rg0pMqu"
+    ],
+    "checkpointState": "awaiting_review",
+    "checkpointUpdatedAt": 1773331532296,
+    "checkpointChildTaskIDs": [
+      "ses_31d35be0dffehtgeOt1SfZhh4p"
+    ],
+    "checkpointActiveChildTaskIDs": [],
+    "checkpointCompletedChildTaskIDs": [
+      "ses_31d35be0dffehtgeOt1SfZhh4p"
+    ],
+    "checkpointChildArtifactTaskIDs": [
+      "ses_31d35be0dffehtgeOt1SfZhh4p"
+    ],
+    "checkpointPendingReviewTaskID": "ses_31d3437ceffejFGYBDh1230zRp",
+    "swarmTemplate": "synthesize",
+    "expectedArtifact": "summary",
+    "artifactCount": 1,
+    "artifactType": "summary",
+    "artifactSummary": "*Child Session ID:** `ses_31d35be0dffehtgeOt1SfZhh4p`",
+    "reviewStatus": "queued",
+    "reviewTaskID": "ses_31d3437ceffejFGYBDh1230zRp",
+    "truncated": false
+  },
+  "resultOutput": "task_id: ses_31d364556ffeWlaT317rg0pMqu (for resuming to continue this task if needed)\n\n<task_result>\n**Child Session ID:** `ses_31d35be0dffehtgeOt1SfZhh4p`\n\n---\n\n## Recursive Orchestrator Smoke Test Results\n\n### Execution Summary\n- **Status:** SUCCESS\n- **Child Subagents Spawned:** 1\n- **Task Completed:** File inspection and schema identification\n\n### Primary Finding\nThe tracker task schema is defined in:\n**`packages/opencode/src/tracker/types.ts`**\n\n### Schema Components Identified\n\n| Component | Type |\n|-----------|------|\n| `TaskType` | Enum (`epic`, `task`, `bug`) |\n| `TaskStatus` | Enum (`open`, `in_progress`, `blocked`, `closed`) |\n| `TrackerTaskSchema` | Zod object schema |\n| `TrackerTask` | Inferred TypeScript type |\n\n### Key Schema Fields\n- `id`: 6-character hex string\n- `title`, `description`: strings\n- `type`, `status`: typed enums\n- `parentId`: optional string\n- `dependencies`: string array\n- `subagentSessionId`: optional string (links to child agents)\n- `metadata`: optional record\n\n---\n\n**Orchestrator smoke test completed successfully.**\n</task_result>\n\nreview_status: queued\nreview_task_id: ses_31d3437ceffejFGYBDh1230zRp\nreview_updated_at: 2026-03-12T16:05:31.828Z",
+  "statusTitle": "Task status",
+  "statusMetadata": {
+    "taskID": "ses_31d364556ffeWlaT317rg0pMqu",
+    "status": "completed",
+    "pendingTurns": 0,
+    "rootSupervisorSessionID": "ses_31d364975ffefAz8mMQHFpW3W9",
+    "lineageDepth": 0,
+    "childTaskIDs": [
+      "ses_31d35be0dffehtgeOt1SfZhh4p"
+    ],
+    "lineagePath": [
+      "ses_31d364556ffeWlaT317rg0pMqu"
+    ],
+    "checkpointState": "awaiting_review",
+    "checkpointUpdatedAt": 1773331532296,
+    "checkpointChildTaskIDs": [
+      "ses_31d35be0dffehtgeOt1SfZhh4p"
+    ],
+    "checkpointActiveChildTaskIDs": [],
+    "checkpointCompletedChildTaskIDs": [
+      "ses_31d35be0dffehtgeOt1SfZhh4p"
+    ],
+    "checkpointChildArtifactTaskIDs": [
+      "ses_31d35be0dffehtgeOt1SfZhh4p"
+    ],
+    "checkpointPendingReviewTaskID": "ses_31d3437ceffejFGYBDh1230zRp",
+    "swarmTemplate": "synthesize",
+    "expectedArtifact": "summary",
+    "artifactCount": 1,
+    "artifactType": "summary",
+    "artifactSummary": "*Child Session ID:** `ses_31d35be0dffehtgeOt1SfZhh4p`",
+    "heartbeatState": "idle",
+    "heartbeatExpectedMS": 10000,
+    "executionEventCount": 4,
+    "executionLatestPhase": "completed",
+    "executionLatestAction": "turn_complete",
+    "executionLatestStatus": "completed",
+    "executionLatestAt": 1773331531821,
+    "executionRecent": [
+      {
+        "phase": "queued",
+        "action": "start",
+        "status": "completed",
+        "time": 1773331397301,
+        "messageID": "msg_ce2c9bab3001kWVonidZ8oRTR3"
+      },
+      {
+        "phase": "dispatched",
+        "action": "dispatch",
+        "status": "running",
+        "time": 1773331397760,
+        "messageID": "msg_ce2c9bab3001kWVonidZ8oRTR3"
+      },
+      {
+        "phase": "running",
+        "action": "turn",
+        "status": "running",
+        "time": 1773331401103,
+        "messageID": "msg_ce2c9bab3001kWVonidZ8oRTR3"
+      },
+      {
+        "phase": "completed",
+        "action": "turn_complete",
+        "status": "completed",
+        "time": 1773331531821,
+        "messageID": "msg_ce2cb9764001V1zYgF1vu55zVO"
+      }
+    ],
+    "discipline": "orchestrator",
+    "schedulerLane": "orchestrator_swarm",
+    "reviewStatus": "queued",
+    "reviewTaskID": "ses_31d3437ceffejFGYBDh1230zRp",
+    "truncated": false
+  },
+  "statusOutput": "task_id: ses_31d364556ffeWlaT317rg0pMqu\nstatus: completed\npending_turns: 0\nqueued_turns: 0\npaused: false\npriority: normal\ndiscipline: orchestrator\nscheduler_lane: orchestrator_swarm\nsubagent_type: general\nroot_supervisor_session_id: ses_31d364975ffefAz8mMQHFpW3W9\nlineage_depth: 0\nchild_task_count: 1\nchild_task_ids: ses_31d35be0dffehtgeOt1SfZhh4p\nswarm_template: synthesize\nexpected_artifact: summary\nartifact_count: 1\nartifact_type: summary\nartifact_summary: *Child Session ID:** `ses_31d35be0dffehtgeOt1SfZhh4p`\nreview_status: queued\nreview_task_id: ses_31d3437ceffejFGYBDh1230zRp\nreview_updated_at: 2026-03-12T16:05:31.828Z\ncheckpoint_state: awaiting_review\ncheckpoint_updated_at: 2026-03-12T16:05:32.296Z\ncheckpoint_child_count: 1\ncheckpoint_active_child_count: 0\ncheckpoint_completed_child_count: 1\ncheckpoint_child_artifact_count: 1\ncheckpoint_pending_review_task_id: ses_31d3437ceffejFGYBDh1230zRp\nheartbeat_state: idle\nheartbeat_expected_ms: 10000\narbitration_candidate: none\nexecution_event_count: 4\nexecution_latest_phase: completed\nexecution_latest_action: turn_complete\nexecution_latest_status: completed\nexecution_latest_at: 2026-03-12T16:05:31.821Z\nupdated_at: 2026-03-12T16:05:31.821Z\nfinished_at: 2026-03-12T16:05:31.821Z\n\n<task_status>\n**Child Session ID:** `ses_31d35be0dffehtgeOt1SfZhh4p`\n\n---\n\n## Recursive Orchestrator Smoke Test Results\n\n### Execution Summary\n- **Status:** SUCCESS\n- **Child Subagents Spawned:** 1\n- **Task Completed:** File inspection and schema identification\n\n### Primary Finding\nThe tracker task schema is defined in:\n**`packages/opencode/src/tracker/types.ts`**\n\n### Schema Components Identified\n\n| Component | Type |\n|-----------|------|\n| `TaskType` | Enum (`epic`, `task`, `bug`) |\n| `TaskStatus` | Enum (`open`, `in_progress`, `blocked`, `closed`) |\n| `TrackerTaskSchema` | Zod object schema |\n| `TrackerTask` | Inferred TypeScript type |\n\n### Key Schema Fields\n- `id`: 6-character hex string\n- `title`, `description`: strings\n- `type`, `status`: typed enums\n- `parentId`: optional string\n- `dependencies`: string array\n- `subagentSessionId`: optional string (links to child agents)\n- `metadata`: optional record\n\n---\n\n**Orchestrator smoke test completed successfully.**\n</task_status>\n\n<task_execution>\nphase: queued\naction: start\nstatus: completed\ntime: 2026-03-12T16:03:17.301Z\nmessage_id: msg_ce2c9bab3001kWVonidZ8oRTR3\n---\nphase: dispatched\naction: dispatch\nstatus: running\ntime: 2026-03-12T16:03:17.760Z\nmessage_id: msg_ce2c9bab3001kWVonidZ8oRTR3\n---\nphase: running\naction: turn\nstatus: running\ntime: 2026-03-12T16:03:21.103Z\nmessage_id: msg_ce2c9bab3001kWVonidZ8oRTR3\n---\nphase: completed\naction: turn_complete\nstatus: completed\ntime: 2026-03-12T16:05:31.821Z\nmessage_id: msg_ce2cb9764001V1zYgF1vu55zVO\n---\n</task_execution>"
+}

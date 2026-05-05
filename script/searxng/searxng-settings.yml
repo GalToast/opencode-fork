@@ -1,0 +1,13 @@
+use_default_settings: true
+
+server:
+  bind_address: "127.0.0.1"
+  port: 8889
+  limiter: false
+  public_instance: false
+  secret_key: "opencodex-local-2026-z7f4k2m9r1t8"
+
+search:
+  formats:
+    - html
+    - json

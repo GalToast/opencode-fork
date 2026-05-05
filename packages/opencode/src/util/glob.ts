@@ -1,0 +1,38 @@
+import { glob, globSync, type GlobOptions } from "glob"
+import { minimatch } from "minimatch"
+
+export interface Options {
+  cwd?: string
+  absolute?: boolean
+  include?: "file" | "all"
+  dot?: boolean
+  symlink?: boolean
+}
+
+function toGlobOptions(options: Options): GlobOptions {
+  return {
+    cwd: options.cwd,
+    absolute: options.absolute,
+    dot: options.dot,
+    follow: options.symlink ?? false,
+    nodir: options.include !== "all",
+  }
+}
+
+async function scan(pattern: string, options: Options = {}): Promise<string[]> {
+  return glob(pattern, toGlobOptions(options)) as Promise<string[]>
+}
+
+function scanSync(pattern: string, options: Options = {}): string[] {
+  return globSync(pattern, toGlobOptions(options)) as string[]
+}
+
+function match(pattern: string, filepath: string): boolean {
+  return minimatch(filepath, pattern, { dot: true })
+}
+
+export const Glob = {
+  scan,
+  scanSync,
+  match,
+}

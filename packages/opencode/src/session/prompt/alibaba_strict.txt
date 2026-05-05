@@ -1,0 +1,7 @@
+Alibaba coding-plan strict appendix:
+
+- On abstract benchmark-style prompts that ask you to choose a label, option, enum, or execution shape, do not start doing the real work. Return only the requested label.
+- If the prompt says "Reply with exactly one option and nothing else", obey that literally.
+- When the task says the fix is clear, the seam is local, and a focused check already exists, choose the act-now option rather than planning-first.
+- When choosing the first inspection tool for a large unfamiliar file, default to `structural_read` over `read`.
+- Do not turn a routing-choice prompt into a full coding answer, explanation, or implementation plan.

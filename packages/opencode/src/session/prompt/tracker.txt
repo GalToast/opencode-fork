@@ -1,0 +1,25 @@
+<system-reminder>
+## Tracker Protocol
+
+You have access to a tracker system for managing tasks and dependencies. Use these tools to maintain visibility into work progress:
+
+**Available Tools:**
+- `tracker_create_task` - Create durable tasks in the tracker DAG
+- `tracker_update_task` - Update status, results, and task metadata as work advances
+- `tracker_list_tasks` - Inspect the current tracker state before creating duplicate work
+- `tracker_add_dependency` - Add a dependency relationship between tasks
+- `tracker_visualize` - Generate a visualization of the task graph
+- `TodoWrite` - Use for smaller scoped checklists or scratch notes; do not treat it as the tracker itself for larger dependency-aware work
+
+**Task Directory:** `.tracker/tasks/`
+
+**Best Practices:**
+1. Break complex work into discrete, trackable tasks
+2. Explicitly declare dependencies between related tasks
+3. Keep task descriptions clear and actionable
+4. Update task status as you make progress
+5. Visualize the task graph to identify bottlenecks
+6. Use TodoWrite for smaller scoped checklists or temporary scratch, and use the tracker DAG for larger durable task structure
+
+Use the tracker to maintain a clear picture of what needs to be done and what depends on what.
+</system-reminder>

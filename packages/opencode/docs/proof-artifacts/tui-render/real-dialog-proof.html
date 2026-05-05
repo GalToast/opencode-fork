@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>OpenCodex Real TUI Dialog Proof</title>
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #101216;
+      color: #e7edf3;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      display: grid;
+      gap: 24px;
+      align-content: center;
+      justify-content: center;
+      padding: 32px;
+    }
+    h1 {
+      font-size: 18px;
+      font-weight: 700;
+      margin: 0 0 6px;
+    }
+    p {
+      color: #99a6b8;
+      margin: 0 0 10px;
+      font-size: 13px;
+    }
+    section {
+      background: #171b22;
+      border: 1px solid #303846;
+      border-radius: 8px;
+      box-shadow: 0 16px 60px rgba(0, 0, 0, 0.35);
+      padding: 18px 20px;
+    }
+    pre {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.18;
+      white-space: pre;
+    }
+  </style>
+</head>
+<body>
+  <section>
+    <h1>Real DialogPlan Module</h1>
+    <p>Mocked sync/theme/dialog contexts; no model calls; deterministic root-session data.</p>
+    <pre>                                                                                
+     Plan                                                                       
+                                                                                
+     Status: Awaiting Approval                                                  
+     Planner: Planning · mocked root-session surface                            
+     Workgraph: 4 obj (2 active), 3 lanes                                       
+     Select to copy                                                             
+                                                                                
+     Search                                                                     
+     Approved Plan plans/opencodex/approved-restoration-plan.md                 
+                                                                                
+     Pending Plan plans/opencodex/tui-proof-plan.md                             
+     Feedback Tighten proof path and capture real TUI surfaces.                 
+     Planner Previewplans/opencodex/tui-proof-plan.md — mocked root-session     
+                                                                                
+                                                                                
+     Updated 10:00:00 AM                                                        
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+</pre>
+  </section>
+  <section>
+    <h1>Real DialogTracker Module - List Mode</h1>
+    <p>Mocked sync/theme/dialog contexts; DialogSelect simplified for static capture.</p>
+    <pre>                                                                                
+     Tracker  |  [L]ist / [D]AG                                                 
+                                                                                
+     Total: 6  Open: 2  In Progress: 2  Blocked: 1  Closed: 1                   
+                                                                                
+     Path:                                                                      
+     .opencode/tracker/root-session.json                                        
+      [copy]                                                                    
+                                                                                
+                                                                                
+     Tasks (4)                                                                  
+                                                                                
+     Select to copy reference                                                   
+                                                                                
+                                                                                
+     Status: [A]ll / [O]pen / [I]n Progress / [B]locked / [C]losed              
+                                                                                
+     Filter tasks                                                               
+                                                                                
+     ▸ Wire screenshot artifact ⊘ blocked · 2 deps aa0004                       
+                                                                                
+     ◆ Restore TUI proof path ◐ in progress · 1 art aa0001                      
+                                                                                
+     ▸ Capture DialogTracker ◐ in progress · 1 dep aa0003                       
+</pre>
+  </section>
+  <section>
+    <h1>Real DialogTracker Module - DAG Mode</h1>
+    <p>Same real DialogTracker instance after OpenTUI mock input presses "d".</p>
+    <pre>                                                                                
+     Tracker  |  [L]ist / [D]AG                                                 
+                                                                                
+     Total: 6  Open: 2  In Progress: 2  Blocked: 1  Closed: 1                   
+                                                                                
+     .opencode/tracker/root-session.json                                        
+      [copy]                                                                    
+                                                                                
+                                                                                
+                                                                                
+   ╭──────────────────────────────╮      ╭──────────────────────────────╮       
+   │ ◆ Restore TUI proof path ◐     │    │ ▸ Capture DialogPlan ✓         │     
+   │ 🎯 typescript, ?opentui      │      │ 🎯 solid                     │       
+   ╰──────────────────────────────╯      │ ⟶ 1 dep(s)                   │       
+                                         ╰──────────────────────────────╯       
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+   ╭──────────────────────────────╮      ╭──────────────────────────────╮       
+   │ ▸ Capture DialogTracker ◐      │    │ ▸ Wire screenshot artifact ⊘   │     
+   │ 🎯 solid, ?dag               │      │ 🎯 ?playwright               │       
+   │ ⟶ 1 dep(s)                   │      │ ⟶ 2 dep(s)                   │       
+   ╰──────────────────────────────╯      ╰──────────────────────────────╯       
+</pre>
+  </section>
+  <section>
+    <h1>Slash Command Wiring</h1>
+    <p>Static verification from src/cli/cmd/tui/routes/session/plan-tracker-command-options.tsx.</p>
+    <pre>{
+  &quot;plan&quot;: {
+    &quot;importsDialog&quot;: true,
+    &quot;hasSlashName&quot;: true,
+    &quot;hasCommandTitle&quot;: true,
+    &quot;opensDialog&quot;: true,
+    &quot;sessionRouteUsesSharedOptions&quot;: true,
+    &quot;verified&quot;: true
+  },
+  &quot;tracker&quot;: {
+    &quot;importsDialog&quot;: true,
+    &quot;hasSlashName&quot;: true,
+    &quot;hasAlias&quot;: true,
+    &quot;hasCommandTitle&quot;: true,
+    &quot;opensDialog&quot;: true,
+    &quot;sessionRouteUsesSharedOptions&quot;: true,
+    &quot;verified&quot;: true
+  }
+}</pre>
+  </section>
+  <section>
+    <h1>Slash Command Dispatch - /plan</h1>
+    <p>Real CommandProvider triggerSlash("plan") using the shared session command options.</p>
+    <pre>                                                                                
+ slash dispatch probe: /plan                                                    
+     Plan                                                                       
+                                                                                
+     Status: Awaiting Approval                                                  
+                                                                                
+     Planner: Planning · mocked root-session surface                            
+                                                                                
+     Workgraph: 4 obj (2 active), 3 lanes                                       
+                                                                                
+     Select to copy                                                             
+                                                                                
+     Search                                                                     
+                                                                                
+     Approved Plan plans/opencodex/approved-restoration-plan.md                 
+                                                                                
+     Pending Plan plans/opencodex/tui-proof-plan.md                             
+                                                                                
+     Feedback Tighten proof path and capture real TUI surfaces.                 
+                                                                                
+     Planner Preview plans/opencodex/tui-proof-plan.md — mocked root-session sur
+                                                                                
+                                                                                
+     Updated 10:00:00 AM                                                        
+</pre>
+  </section>
+  <section>
+    <h1>Slash Command Dispatch - /tracker</h1>
+    <p>Real CommandProvider triggerSlash("tracker") using the shared session command options.</p>
+    <pre>                                                                                
+ slash dispatch probe: /tracker                                                 
+     Tracker  |  [L]ist / [D]AG                                                 
+                                                                                
+     Total: 6  Open: 2  In Progress: 2  Blocked: 1  Closed: 1                   
+                                                                                
+     Path:                                                                      
+     .opencode/tracker/root-session.json                                        
+      [copy]                                                                    
+                                                                                
+                                                                                
+     Tasks (4)                                                                  
+                                                                                
+     Select to copy reference                                                   
+                                                                                
+                                                                                
+     Status: [A]ll / [O]pen / [I]n Progress / [B]locked / [C]losed              
+                                                                                
+     Filter tasks                                                               
+                                                                                
+     ▸ Wire screenshot artifact ⊘ blocked · 2 deps aa0004                       
+                                                                                
+     ◆ Restore TUI proof path ◐ in progress · 1 art aa0001                      
+                                                                                
+</pre>
+  </section>
+</body>
+</html>

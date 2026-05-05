@@ -1,0 +1,16 @@
+<system-reminder>
+## Approved Plan Active
+
+An approved plan is active and ready for execution.
+
+**Plan File:** {planPath}
+
+**Execution Guidelines:**
+1. Read the approved plan file to understand the full scope
+2. Follow the plan's implementation steps in order
+3. Use the tracker to create tasks corresponding to plan sections
+4. Mark progress in the tracker as you complete each step
+5. If you encounter obstacles, consult the plan before deviating
+
+The plan represents agreed-upon work - execute it faithfully while using the tracker to maintain visibility into progress.
+</system-reminder>

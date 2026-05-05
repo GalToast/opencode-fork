@@ -1,0 +1,20 @@
+{
+  "timestamp": "2026-05-01T15:11:33.924Z",
+  "proofs": [
+    {
+      "name": "Basic Frame",
+      "artifact": "proof-frame.txt",
+      "htmlArtifact": "proof-frame.html",
+      "description": "Box with Text, border, padding"
+    },
+    {
+      "name": "Spans Capture",
+      "artifact": "proof-spans.json",
+      "description": "Multi-span rendering with nested colors"
+    }
+  ],
+  "status": "OK",
+  "deterministic": true,
+  "modelCalls": false,
+  "networkCalls": false
+}

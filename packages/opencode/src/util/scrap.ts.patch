@@ -1,0 +1,16 @@
+diff --git a/packages/opencode/src/util/scrap.ts b/packages/opencode/src/util/scrap.ts
+deleted file mode 100644
+index e69de29..0000000
+--- a/packages/opencode/src/util/scrap.ts
++++ /dev/null
+@@ -1,9 +0,0 @@
+-export const foo: string = "42"
+-export const bar: number = 123
+-
+-export function dummyFunction(): void {
+-  console.log("This is a dummy function")
+-}
+-
+-export function randomHelper(): boolean {
+-  return Math.random() > 0.5
+-}

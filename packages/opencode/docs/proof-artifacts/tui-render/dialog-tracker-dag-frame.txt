@@ -1,0 +1,24 @@
+                                                                                
+     Tracker  |  [L]ist / [D]AG                                                 
+                                                                                
+     Total: 6  Open: 2  In Progress: 2  Blocked: 1  Closed: 1                   
+                                                                                
+     .opencode/tracker/root-session.json                                        
+      [copy]                                                                    
+                                                                                
+                                                                                
+                                                                                
+   ╭──────────────────────────────╮      ╭──────────────────────────────╮       
+   │ ◆ Restore TUI proof path ◐     │    │ ▸ Capture DialogPlan ✓         │     
+   │ 🎯 typescript, ?opentui      │      │ 🎯 solid                     │       
+   ╰──────────────────────────────╯      │ ⟶ 1 dep(s)                   │       
+                                         ╰──────────────────────────────╯       
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+   ╭──────────────────────────────╮      ╭──────────────────────────────╮       
+   │ ▸ Capture DialogTracker ◐      │    │ ▸ Wire screenshot artifact ⊘   │     
+   │ 🎯 solid, ?dag               │      │ 🎯 ?playwright               │       
+   │ ⟶ 1 dep(s)                   │      │ ⟶ 2 dep(s)                   │       
+   ╰──────────────────────────────╯      ╰──────────────────────────────╯       

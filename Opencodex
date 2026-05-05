@@ -1,0 +1,37 @@
+#!/usr/bin/env pwsh
+# Opencodex launcher - source-mode entrypoint with shared wrapper preflight
+
+param(
+  [Parameter(ValueFromRemainingArguments = $true)]
+  [string[]] $CliArgs
+)
+
+$ErrorActionPreference = "Stop"
+
+$scriptPath = $MyInvocation.MyCommand.Path
+if (-not $scriptPath) {
+  $scriptPath = (Get-Command Opencodex -ErrorAction SilentlyContinue)?.Source
+  if (-not $scriptPath) {
+    Write-Error "Cannot determine opencode repository location. Ensure Opencodex is in your PATH."
+    exit 1
+  }
+}
+
+$repoRoot = Split-Path -Parent $scriptPath
+$wrapperPath = Join-Path $repoRoot "opencode-steer.ps1"
+
+if (-not (Test-Path $wrapperPath)) {
+  Write-Error "OpenCode wrapper not found at $wrapperPath"
+  exit 1
+}
+
+$env:OPENCODE_WINDOWS_LAUNCH_MODE = "source"
+if (-not (Test-Path Env:OPENCODE_SEARXNG_PREFLIGHT)) {
+  $env:OPENCODE_SEARXNG_PREFLIGHT = "1"
+}
+if (-not (Test-Path Env:OPENCODE_SEARXNG_AUTO_START)) {
+  $env:OPENCODE_SEARXNG_AUTO_START = "1"
+}
+
+& $wrapperPath @CliArgs
+exit $LASTEXITCODE

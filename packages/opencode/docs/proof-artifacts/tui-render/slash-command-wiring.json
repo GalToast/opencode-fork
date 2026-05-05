@@ -1,0 +1,21 @@
+{
+  "sourceFile": "src/cli/cmd/tui/routes/session/plan-tracker-command-options.tsx",
+  "routeFile": "src/cli/cmd/tui/routes/session/index.tsx",
+  "plan": {
+    "importsDialog": true,
+    "hasSlashName": true,
+    "hasCommandTitle": true,
+    "opensDialog": true,
+    "sessionRouteUsesSharedOptions": true,
+    "verified": true
+  },
+  "tracker": {
+    "importsDialog": true,
+    "hasSlashName": true,
+    "hasAlias": true,
+    "hasCommandTitle": true,
+    "opensDialog": true,
+    "sessionRouteUsesSharedOptions": true,
+    "verified": true
+  }
+}

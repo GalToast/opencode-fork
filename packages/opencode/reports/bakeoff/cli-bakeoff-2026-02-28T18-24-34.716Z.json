@@ -1,0 +1,167 @@
+{
+  "generatedAt": "2026-02-28T18:25:57.598Z",
+  "cwd": "C:\\Users\\HP\\repos\\opencode\\packages\\opencode",
+  "runCount": 2,
+  "timeoutMs": 180000,
+  "parallelWindowMs": 27942,
+  "summary": {
+    "opencodeSuite": {
+      "runs": 1,
+      "ok": 1,
+      "fail": 0,
+      "medianMs": 8627,
+      "minMs": 8627,
+      "maxMs": 8627
+    },
+    "opencodeSmoke": {
+      "runs": 2,
+      "ok": 0,
+      "fail": 2,
+      "medianMs": 1898,
+      "minMs": 1831,
+      "maxMs": 1965
+    },
+    "codexSmoke": {
+      "runs": 2,
+      "ok": 2,
+      "fail": 0,
+      "medianMs": 21258,
+      "minMs": 17380,
+      "maxMs": 25135
+    },
+    "codexStress": {
+      "runs": 2,
+      "ok": 2,
+      "fail": 0,
+      "medianMs": 27420,
+      "minMs": 26914,
+      "maxMs": 27926
+    }
+  },
+  "rows": [
+    {
+      "name": "opencode_suite",
+      "kind": "suite",
+      "ok": true,
+      "code": 0,
+      "ms": 8627,
+      "timeout": false,
+      "cmd": [
+        "bun",
+        "test",
+        "test/cli/steering.test.ts",
+        "test/tool/task-mailbox-smoke.test.ts",
+        "test/scheduler/control-plane.test.ts",
+        "test/scheduler/soak.test.ts"
+      ],
+      "stdout": "bun test v1.3.10 (30e609e0)\n",
+      "stderr": "\n 19 pass\n 0 fail\n 47 expect() calls\nRan 19 tests across 4 files. [8.50s]\n"
+    },
+    {
+      "name": "opencode_smoke",
+      "kind": "smoke",
+      "ok": false,
+      "code": 0,
+      "ms": 1965,
+      "timeout": false,
+      "token": "BENCH_OK_O_0",
+      "sawToken": false,
+      "cmd": [
+        "opencode",
+        "run",
+        "--format",
+        "default",
+        "Return exactly BENCH_OK_O_0 and nothing else."
+      ],
+      "stdout": "",
+      "stderr": "\u001b[0m\r\n> build · gpt-5.3-codex\r\n\u001b[0m\r\nerror: Cannot find module './schemas.js' from 'C:\\Users\\HP\\repos\\opencode\\.opencode\\node_modules\\zod\\v4\\core\\index.js'\n"
+    },
+    {
+      "name": "opencode_smoke",
+      "kind": "smoke",
+      "ok": false,
+      "code": 0,
+      "ms": 1831,
+      "timeout": false,
+      "token": "BENCH_OK_O_1",
+      "sawToken": false,
+      "cmd": [
+        "opencode",
+        "run",
+        "--format",
+        "default",
+        "Return exactly BENCH_OK_O_1 and nothing else."
+      ],
+      "stdout": "",
+      "stderr": "\u001b[0m\r\n\r\n\u001b[0m\r\n> build · gpt-5.3-codexerror: Cannot find module './schemas.js' from 'C:\\Users\\HP\\repos\\opencode\\.opencode\\node_modules\\zod\\v4\\core\\index.js'\n"
+    },
+    {
+      "name": "codex_smoke",
+      "kind": "smoke",
+      "ok": true,
+      "code": 0,
+      "ms": 17380,
+      "timeout": false,
+      "token": "BENCH_OK_C_0",
+      "sawToken": true,
+      "cmd": [
+        "codex",
+        "exec",
+        "Return exactly BENCH_OK_C_0 and nothing else."
+      ],
+      "stdout": "BENCH_OK_C_0\n",
+      "stderr": "OpenAI Codex v0.106.0 (research preview)\n--------\nworkdir: C:\\Users\\HP\\repos\\opencode\\packages\\opencode\nmodel: gpt-5.3-codex\nprovider: openai\napproval: never\nsandbox: danger-full-access\nreasoning effort: high\nreasoning summaries: none\nsession id: 019ca57e-f71e-7533-af7e-77019ad7106b\n--------\nuser\nReturn exactly BENCH_OK_C_0 and nothing else.\nwarning: Under-development features enabled: apps_mcp_gateway, default_mode_request_user_input, realtime_conversation, responses_websockets, responses_websockets_v2, skill_env_var_dependency_prompt, voice_transcription. Under-development features are incomplete and may behave unpredictably. To suppress this warning, set `suppress_unstable_features_warning = true` in C:\\Users\\HP\\.codex\\config.toml.\nmcp: playwright starting\nmcp: chrome-devtools starting\nmcp: codex_apps starting\n2026-02-28T18:24:47.868898Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(reqwest::Error { kind: Decode, source: Error(\"data did not match any variant of untagged enum JsonRpcMessage\", line: 0, column: 0) })\nmcp: codex_apps failed: MCP client for `codex_apps` failed to start: MCP startup failed: handshaking with MCP server failed: Send message error Transport [rmcp::transport::worker::WorkerTransport<rmcp::transport::streamable_http_client::StreamableHttpClientWorker<reqwest::async_impl::client::Client>>] error: Client error: error decoding response body, when send initialize request\nmcp: chrome-devtools ready\nmcp: playwright ready\nmcp startup: ready: chrome-devtools, playwright; failed: codex_apps\ncodex\nBENCH_OK_C_0\ntokens used\n16,225\n"
+    },
+    {
+      "name": "codex_smoke",
+      "kind": "smoke",
+      "ok": true,
+      "code": 0,
+      "ms": 25135,
+      "timeout": false,
+      "token": "BENCH_OK_C_1",
+      "sawToken": true,
+      "cmd": [
+        "codex",
+        "exec",
+        "Return exactly BENCH_OK_C_1 and nothing else."
+      ],
+      "stdout": "BENCH_OK_C_1\n",
+      "stderr": "OpenAI Codex v0.106.0 (research preview)\n--------\nworkdir: C:\\Users\\HP\\repos\\opencode\\packages\\opencode\nmodel: gpt-5.3-codex\nprovider: openai\napproval: never\nsandbox: danger-full-access\nreasoning effort: high\nreasoning summaries: none\nsession id: 019ca57f-3b0d-7b23-b475-47ecaa0a7350\n--------\nuser\nReturn exactly BENCH_OK_C_1 and nothing else.\nwarning: Under-development features enabled: apps_mcp_gateway, default_mode_request_user_input, realtime_conversation, responses_websockets, responses_websockets_v2, skill_env_var_dependency_prompt, voice_transcription. Under-development features are incomplete and may behave unpredictably. To suppress this warning, set `suppress_unstable_features_warning = true` in C:\\Users\\HP\\.codex\\config.toml.\nmcp: chrome-devtools starting\nmcp: playwright starting\nmcp: codex_apps starting\n2026-02-28T18:25:05.177669Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(reqwest::Error { kind: Decode, source: Error(\"data did not match any variant of untagged enum JsonRpcMessage\", line: 0, column: 0) })\nmcp: codex_apps failed: MCP client for `codex_apps` failed to start: MCP startup failed: handshaking with MCP server failed: Send message error Transport [rmcp::transport::worker::WorkerTransport<rmcp::transport::streamable_http_client::StreamableHttpClientWorker<reqwest::async_impl::client::Client>>] error: Client error: error decoding response body, when send initialize request\nmcp: chrome-devtools ready\nmcp: playwright ready\nmcp startup: ready: chrome-devtools, playwright; failed: codex_apps\ncodex\nBENCH_OK_C_1\ntokens used\n16,226\n"
+    },
+    {
+      "name": "codex_parallel",
+      "kind": "stress",
+      "ok": true,
+      "code": 0,
+      "ms": 26914,
+      "timeout": false,
+      "token": "BENCH_OK_P_0",
+      "sawToken": true,
+      "cmd": [
+        "codex",
+        "exec",
+        "Return exactly BENCH_OK_P_0 and nothing else."
+      ],
+      "stdout": "BENCH_OK_P_0\n",
+      "stderr": "OpenAI Codex v0.106.0 (research preview)\n--------\nworkdir: C:\\Users\\HP\\repos\\opencode\\packages\\opencode\nmodel: gpt-5.3-codex\nprovider: openai\napproval: never\nsandbox: danger-full-access\nreasoning effort: high\nreasoning summaries: none\nsession id: 019ca57f-9d52-7fd1-9756-3129162e2267\n--------\nuser\nReturn exactly BENCH_OK_P_0 and nothing else.\nwarning: Under-development features enabled: apps_mcp_gateway, default_mode_request_user_input, realtime_conversation, responses_websockets, responses_websockets_v2, skill_env_var_dependency_prompt, voice_transcription. Under-development features are incomplete and may behave unpredictably. To suppress this warning, set `suppress_unstable_features_warning = true` in C:\\Users\\HP\\.codex\\config.toml.\nmcp: chrome-devtools starting\nmcp: playwright starting\nmcp: codex_apps starting\n2026-02-28T18:25:30.526872Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(reqwest::Error { kind: Decode, source: Error(\"data did not match any variant of untagged enum JsonRpcMessage\", line: 0, column: 0) })\nmcp: codex_apps failed: MCP client for `codex_apps` failed to start: MCP startup failed: handshaking with MCP server failed: Send message error Transport [rmcp::transport::worker::WorkerTransport<rmcp::transport::streamable_http_client::StreamableHttpClientWorker<reqwest::async_impl::client::Client>>] error: Client error: error decoding response body, when send initialize request\nmcp: chrome-devtools failed: MCP client for `chrome-devtools` timed out after 20 seconds. Add or adjust `startup_timeout_sec` in your config.toml:\n[mcp_servers.chrome-devtools]\nstartup_timeout_sec = XX\nmcp: playwright ready\nmcp startup: ready: playwright; failed: codex_apps, chrome-devtools\ncodex\nBENCH_OK_P_0\ntokens used\n13,551\n"
+    },
+    {
+      "name": "codex_parallel",
+      "kind": "stress",
+      "ok": true,
+      "code": 0,
+      "ms": 27926,
+      "timeout": false,
+      "token": "BENCH_OK_P_1",
+      "sawToken": true,
+      "cmd": [
+        "codex",
+        "exec",
+        "Return exactly BENCH_OK_P_1 and nothing else."
+      ],
+      "stdout": "BENCH_OK_P_1\n",
+      "stderr": "OpenAI Codex v0.106.0 (research preview)\n--------\nworkdir: C:\\Users\\HP\\repos\\opencode\\packages\\opencode\nmodel: gpt-5.3-codex\nprovider: openai\napproval: never\nsandbox: danger-full-access\nreasoning effort: high\nreasoning summaries: none\nsession id: 019ca57f-9d58-71a2-b504-437b94a7cb28\n--------\nuser\nReturn exactly BENCH_OK_P_1 and nothing else.\nwarning: Under-development features enabled: apps_mcp_gateway, default_mode_request_user_input, realtime_conversation, responses_websockets, responses_websockets_v2, skill_env_var_dependency_prompt, voice_transcription. Under-development features are incomplete and may behave unpredictably. To suppress this warning, set `suppress_unstable_features_warning = true` in C:\\Users\\HP\\.codex\\config.toml.\nmcp: chrome-devtools starting\nmcp: playwright starting\nmcp: codex_apps starting\n2026-02-28T18:25:30.465812Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(reqwest::Error { kind: Decode, source: Error(\"data did not match any variant of untagged enum JsonRpcMessage\", line: 0, column: 0) })\nmcp: codex_apps failed: MCP client for `codex_apps` failed to start: MCP startup failed: handshaking with MCP server failed: Send message error Transport [rmcp::transport::worker::WorkerTransport<rmcp::transport::streamable_http_client::StreamableHttpClientWorker<reqwest::async_impl::client::Client>>] error: Client error: error decoding response body, when send initialize request\nmcp: chrome-devtools failed: MCP client for `chrome-devtools` timed out after 20 seconds. Add or adjust `startup_timeout_sec` in your config.toml:\n[mcp_servers.chrome-devtools]\nstartup_timeout_sec = XX\nmcp: playwright ready\nmcp startup: ready: playwright; failed: codex_apps, chrome-devtools\ncodex\nBENCH_OK_P_1\ntokens used\n13,551\n"
+    }
+  ]
+}

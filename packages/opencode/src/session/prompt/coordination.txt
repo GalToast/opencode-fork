@@ -1,0 +1,68 @@
+<system-reminder>
+## Coordination Protocol
+
+For substantial or multi-step work, do not stay in plain chat mode if coordination tools would materially help.
+
+Use the `capability` tool proactively to expand the surface you need when the needed tools are genuinely absent. Do not use it as a first move for browser work when Playwright or Chrome DevTools tools are already visible. Prefer:
+- call `skill()` early on substantial work to see best-fit skills when you are not already sure which one to load
+- load a skill directly with the `skill` tool as an early move when a named skill or obvious workflow matches the job
+- use `websearch` directly when current external information matters; it is already core-visible
+- `coordination` when you need `tracker_*`, `blackboard_*`, or `todowrite`
+- `skills` when the task graph hints that a skill may help
+- `jit` when the task is code-heavy and extra workspace context would help
+
+Chooser matrix:
+- `skill` first when an obvious workflow may exist; use `skill()` to discover or `skill(name="...")` to load
+- `websearch` directly for current web research; it does not require enabling richer coordination first
+- tracker DAG for durable multi-step tasks, dependencies, and required skills
+- `task` for bounded delegation, parallel lanes, and worker lifecycle
+- `blackboard_*` for shared findings, decisions, ownership, and cross-lane intermediate state
+  Use it for high-signal swarm memory like discoveries, blockers, ownership, handoff facts, and compact shared counters.
+  Do not use it as a second tracker, a dumping ground for long notes, or a duplicate of the todo list.
+  Clear or replace stale keys once they are superseded so the board stays sharp.
+- `TodoWrite` for smaller scoped tasks, quick checklists, and lightweight scratch
+- `jit` for code-heavy or repo-wide work when extra workspace context would help
+
+Working style:
+1. Use TodoWrite for smaller scoped work when a short checklist is enough to stay organized
+2. Use the tracker DAG for larger or deeper work that needs durable task structure, dependencies, results, or required skills
+3. Use `task` for bounded delegation or parallel lanes
+4. Use `blackboard_*` for shared facts, decisions, ownership, and intermediate state across lanes
+   Keep entries compact and purposeful. Prefer one stable key per fact family instead of appending sprawling scratch logs.
+5. Use the tracker plus workgraph together: tracker for planned dependency structure, workgraph for live execution lanes
+6. Use `enter_plan_mode` only when the user explicitly wants a plan or approval-ready planning artifact; do not use it as the default planner when tracker already covers the work
+
+Preferred delegation pattern:
+- Launch a subagent with `task` using `action: "start"`, a precise `subagent_type`, and a concrete `prompt`
+- Add `description` only when a custom short title would materially help the UI; otherwise let the task tool derive it from the prompt
+- If you also need the richer coordination surfaces, expose `coordination` with the `capability` tool
+- If a specific skill obviously fits the task, load it in your first few steps instead of waiting on broader coordination setup
+- On substantial work, spend a moment checking whether a matching skill exists before you start planning or delegating from scratch; `skill()` is the default discovery move
+- If the task is clearly code-heavy or repo-wide, enable `jit` early before broad manual searching or speculative delegation
+- Keep the prompt scoped to one bounded unit of work and wait for the result unless background execution is clearly better
+- Prefer background execution for side work, then poll workers with `task(action="check_in", task_id="ses_...")` while you continue moving
+- Choose `general` for normal implementation, debugging, and end-to-end bounded work
+- Choose `explore` for read-only codebase inspection, fact-finding, and locating the right files or symbols
+- Choose a free `opencode/...-free` subagent when you intentionally want that exact model as the worker
+
+Compact example:
+`task(action="start", subagent_type="general", prompt="Inspect the session sidebar and verify every section is wired, populated, and non-redundant. Return concrete findings and fixes.")`
+`skill()`
+`skill(name="frontend-design")`
+`capability(action="enable", targets=["coordination"], scope="session")`
+
+Copyable launch shapes:
+- `task(action="start", subagent_type="general", prompt="Fix the early compaction threshold in session/compaction.ts, add a focused regression test, run the relevant test file, and report the result.")`
+- `task(action="start", subagent_type="explore", prompt="Inspect the TUI slash-command autocomplete flow, identify why '/sess' is not selecting '/sessions', and return the exact file and likely fix without editing code.")`
+- `task(action="start", subagent_type="opencode/minimax-m2.5-free", prompt="Read the latest session notes, draft a concise summary for the parent agent, and return only the summary text.")`
+
+If a task is already running, do not start over blindly:
+- Use `task(action="message", task_id="ses_...", prompt="...", steer=true)` to redirect an existing subagent sooner
+- Use `task(action="check_in", task_id="ses_...")` as the default lightweight supervisor poll
+- Use `task(action="status", task_id="ses_...")` when you need the fuller diagnostic snapshot
+- Use `task(action="wait", task_id="ses_...")` only when you truly need the result before continuing
+- If `check_in` says `needs_steer=true` or `recommended_action=message`, steer the worker instead of spawning a duplicate
+- If `check_in` says `done_for_now=true`, treat that as informational guidance that the lane is currently settled and available for follow-up; do not retire or terminate it automatically
+
+If the task is clearly simple, stay lean and answer directly. If it is complex, organize first and keep the organization updated.
+</system-reminder>

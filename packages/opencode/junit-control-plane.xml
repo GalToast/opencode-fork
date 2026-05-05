@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="bun test" tests="3" assertions="8" failures="0" skipped="0" time="21.1489657">
+  <testsuite name="C:\Users\HP\repos\opencode\packages\opencode\test\scheduler\control-plane.test.ts" file="C:\Users\HP\repos\opencode\packages\opencode\test\scheduler\control-plane.test.ts" tests="3" assertions="8" failures="0" skipped="0" time="0" hostname="">
+    <testsuite name="scheduler control plane" file="C:\Users\HP\repos\opencode\packages\opencode\test\scheduler\control-plane.test.ts" line="6" tests="3" assertions="8" failures="0" skipped="0" time="10.188" hostname="">
+      <testcase name="dispatches queued jobs by priority within a lane" classname="scheduler control plane" time="3.016" file="C:\Users\HP\repos\opencode\packages\opencode\test\scheduler\control-plane.test.ts" line="7" assertions="1" />
+      <testcase name="vanilla mode bypasses lane queueing" classname="scheduler control plane" time="4.766" file="C:\Users\HP\repos\opencode\packages\opencode\test\scheduler\control-plane.test.ts" line="80" assertions="1" />
+      <testcase name="status exposes lane metrics" classname="scheduler control plane" time="2.406" file="C:\Users\HP\repos\opencode\packages\opencode\test\scheduler\control-plane.test.ts" line="110" assertions="6" />
+    </testsuite>
+  </testsuite>
+</testsuites>

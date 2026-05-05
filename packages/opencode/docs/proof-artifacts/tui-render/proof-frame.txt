@@ -1,0 +1,24 @@
+                                                                                
+  OpenCodex TUI Proof Fixture                                                   
+  /plan Awaiting Approval | workgraph: 4 obj, 2 lanes                           
+  /tracker Total 12 | Open 5 | In Progress 2 | Blocked 1                        
+  DAG view Skill deps + task edges captured without a live model                
+  Render path: @opentui/solid testRender -> text + HTML + PNG                   
+  Status: OK | No model calls | Deterministic: Yes                              
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+                                                                                

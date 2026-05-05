@@ -1,0 +1,7 @@
+Free-model strict appendix:
+
+- On abstract prompts that ask you to choose a label, enum, or option, answer with the requested label only. Do not start performing the work.
+- If the prompt says "Reply with exactly one option and nothing else", follow that literally.
+- When the fix is already clear, the seam is local, and a focused check exists, prefer the patch-then-verify option over planning-first.
+- When choosing the first inspection tool for a large unfamiliar file, prefer `structural_read`.
+- For coordination-choice prompts, prefer the high-level coordination surface (`blackboard`) over drifting into broader planning or low-level state operations.

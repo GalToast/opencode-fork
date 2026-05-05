@@ -1,0 +1,24 @@
+                                                                                
+ slash dispatch probe: /plan                                                    
+     Plan                                                                       
+                                                                                
+     Status: Awaiting Approval                                                  
+                                                                                
+     Planner: Planning · mocked root-session surface                            
+                                                                                
+     Workgraph: 4 obj (2 active), 3 lanes                                       
+                                                                                
+     Select to copy                                                             
+                                                                                
+     Search                                                                     
+                                                                                
+     Approved Plan plans/opencodex/approved-restoration-plan.md                 
+                                                                                
+     Pending Plan plans/opencodex/tui-proof-plan.md                             
+                                                                                
+     Feedback Tighten proof path and capture real TUI surfaces.                 
+                                                                                
+     Planner Preview plans/opencodex/tui-proof-plan.md — mocked root-session sur
+                                                                                
+                                                                                
+     Updated 10:00:00 AM                                                        

@@ -1,0 +1,306 @@
+import { createMemo, createSignal, onMount, Show, type JSX } from "solid-js"
+import { useSync } from "@tui/context/sync"
+import { map, pipe, sortBy } from "remeda"
+import { DialogSelect } from "@tui/ui/dialog-select"
+import { useDialog } from "@tui/ui/dialog"
+import { useSDK } from "../context/sdk"
+import { DialogPrompt } from "../ui/dialog-prompt"
+import { Link } from "../ui/link"
+import { useTheme } from "../context/theme"
+import { TextAttributes } from "@opentui/core"
+import type { OpencodeClient, ProviderAuthAuthorization } from "@opencode-ai/sdk/v2"
+import { DialogModel } from "./dialog-model"
+import { useKeyboard } from "@opentui/solid"
+import { Clipboard } from "@tui/util/clipboard"
+import { useToast } from "../ui/toast"
+import type { DialogSelectOption } from "@tui/ui/dialog-select"
+
+type ProviderOption = {
+  id: string
+  name: string
+}
+
+type ProviderAuthMethod = {
+  type: "api" | "oauth"
+  label: string
+}
+
+type SyncProviderContext = {
+  data: {
+    provider_next: {
+      all: ProviderOption[]
+    }
+    provider_auth: Record<string, ProviderAuthMethod[]>
+  }
+  bootstrap: () => Promise<void>
+}
+
+type SDKClientContext = {
+  client: OpencodeClient
+}
+
+const PROVIDER_PRIORITY: Record<string, number> = {
+  opencode: 0,
+  "opencode-go": 1,
+  openai: 2,
+  "github-copilot": 3,
+  anthropic: 4,
+  google: 5,
+}
+
+export function createDialogProviderOptions(dialog: ReturnType<typeof useDialog>) {
+  const sync = useSync() as unknown as SyncProviderContext
+  const sdk = useSDK() as unknown as SDKClientContext
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  const client: OpencodeClient = sdk.client
+  const options = createMemo<DialogSelectOption<string>[]>(() => {
+    return pipe(
+      sync.data.provider_next.all,
+      sortBy((x) => PROVIDER_PRIORITY[x.id] ?? 99),
+      map((provider) => ({
+        title: provider.name,
+        value: provider.id,
+        description: {
+          opencode: "(Recommended)",
+          anthropic: "(Claude Max or API key)",
+          openai: "(ChatGPT Plus/Pro or API key)",
+          "opencode-go": "Low cost subscription for everyone",
+        }[provider.id],
+        category: provider.id in PROVIDER_PRIORITY ? "Popular" : "Other",
+        async onSelect() {
+          const methods = sync.data.provider_auth[provider.id] ?? [
+            {
+              type: "api",
+              label: "API key",
+            },
+          ]
+          let index: number | null = 0
+          if (methods.length > 1) {
+            index = await new Promise<number | null>((resolve) => {
+              dialog.replace(
+                <DialogSelect
+                  title="Select auth method"
+                  options={methods.map((x, methodIndex) => ({
+                    title: x.label,
+                    value: methodIndex,
+                  }))}
+                  onSelect={(option) => resolve(option.value)}
+                /> as JSX.Element,
+                () => resolve(null),
+              )
+            })
+          }
+          if (index == null) return
+          const method = methods[index]
+          if (method.type === "oauth") {
+            const result = await client.provider.oauth.authorize({
+              providerID: provider.id,
+              method: index,
+            })
+            const data = result.data
+            if (data?.method === "code") {
+              dialog.replace(<CodeMethod providerID={provider.id} title={method.label} index={index} authorization={data} /> as JSX.Element)
+            }
+            if (data?.method === "auto") {
+              dialog.replace(<AutoMethod providerID={provider.id} title={method.label} index={index} authorization={data} /> as JSX.Element)
+            }
+          }
+          if (method.type === "api") {
+            return dialog.replace(<ApiMethod providerID={provider.id} title={method.label} /> as JSX.Element)
+          }
+        },
+      })),
+    )
+  })
+  return options
+}
+
+export function DialogProvider() {
+  const dialog = useDialog()
+  const options = createDialogProviderOptions(dialog)
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+  return <DialogSelect title="Connect a provider" options={options()} />
+}
+
+interface AutoMethodProps {
+  index: number
+  providerID: string
+  title: string
+  authorization: ProviderAuthAuthorization
+}
+function AutoMethod(props: AutoMethodProps) {
+  const { theme } = useTheme()
+  const sdk = useSDK() as unknown as SDKClientContext
+  const dialog = useDialog()
+  const sync = useSync() as unknown as SyncProviderContext
+  const toast = useToast()
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  const client: OpencodeClient = sdk.client
+
+  useKeyboard((evt) => {
+    if (evt.name === "c" && !evt.ctrl && !evt.meta) {
+      const code = props.authorization.instructions.match(/[A-Z0-9]{4}-[A-Z0-9]{4,5}/)?.[0] ?? props.authorization.url
+      void Clipboard.copy(code)
+        .then(() => toast.show({ message: "Copied to clipboard", variant: "info" }))
+        .catch(toast.error)
+    }
+  })
+
+  onMount(() => {
+    void (async () => {
+      const result = await client.provider.oauth.callback({
+        providerID: props.providerID,
+        method: props.index,
+      })
+      if (result.error) {
+        dialog.clear()
+        return
+      }
+      await client.instance.dispose()
+      await sync.bootstrap()
+      dialog.replace(() => <DialogModel providerID={props.providerID} />)
+    })()
+  })
+
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+  return (
+    <box paddingLeft={2} paddingRight={2} gap={1} paddingBottom={1}>
+      <box flexDirection="row" justifyContent="space-between">
+        <text attributes={TextAttributes.BOLD} fg={theme.text}>
+          {props.title}
+        </text>
+        <text fg={theme.textMuted} onMouseUp={() => dialog.clear()}>
+          esc
+        </text>
+      </box>
+      <box gap={1}>
+        <Link href={props.authorization.url} fg={theme.primary} />
+        <text fg={theme.textMuted}>{props.authorization.instructions}</text>
+      </box>
+      <text fg={theme.textMuted}>Waiting for authorization...</text>
+      <text fg={theme.text}>
+        c <span style={{ fg: theme.textMuted }}>copy</span>
+      </text>
+    </box>
+  )
+}
+
+interface CodeMethodProps {
+  index: number
+  title: string
+  providerID: string
+  authorization: ProviderAuthAuthorization
+}
+function CodeMethod(props: CodeMethodProps) {
+  const { theme } = useTheme()
+  const sdk = useSDK() as unknown as SDKClientContext
+  const sync = useSync() as unknown as SyncProviderContext
+  const dialog = useDialog()
+  const [error, setError] = createSignal(false)
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  const client: OpencodeClient = sdk.client
+
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+  return (
+    <DialogPrompt
+      title={props.title}
+      placeholder="Authorization code"
+      onConfirm={async (value) => {
+        const { error: hasError } = await client.provider.oauth.callback({
+          providerID: props.providerID,
+          method: props.index,
+          code: value,
+        })
+      if (!hasError) {
+        await client.instance.dispose()
+        await sync.bootstrap()
+        dialog.replace(() => <DialogModel providerID={props.providerID} />)
+        return
+      }
+      setError(true)
+      }}
+      description={() => {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+        return (
+          <box gap={1}>
+            <text fg={theme.textMuted}>{props.authorization.instructions}</text>
+            <Link href={props.authorization.url} fg={theme.primary} />
+            <Show when={error()}>
+              <text fg={theme.error}>Invalid code</text>
+            </Show>
+          </box>
+        )
+      }}
+    />
+  )
+}
+
+interface ApiMethodProps {
+  providerID: string
+  title: string
+}
+function ApiMethod(props: ApiMethodProps) {
+  const dialog = useDialog()
+  const sdk = useSDK() as unknown as SDKClientContext
+  const sync = useSync() as unknown as SyncProviderContext
+  const { theme } = useTheme()
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  const client: OpencodeClient = sdk.client
+
+  function renderProviderDescription() {
+    if (props.providerID === "opencode") {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+      return (
+        <box gap={1}>
+          <text fg={theme.textMuted}>
+            OpenCode Zen gives you access to all the best coding models at the cheapest prices with a single API key.
+          </text>
+          <text fg={theme.text}>
+            Go to <span style={{ fg: theme.primary }}>https://opencode.ai/zen</span> to get a key
+          </text>
+        </box>
+      )
+    }
+    if (props.providerID === "opencode-go") {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+      return (
+        <box gap={1}>
+          <text fg={theme.textMuted}>
+            OpenCode Go is a $10 per month subscription that provides reliable access to popular open coding models with
+            generous usage limits.
+          </text>
+          <text fg={theme.text}>
+            Go to <span style={{ fg: theme.primary }}>https://opencode.ai/zen</span> and enable OpenCode Go
+          </text>
+        </box>
+      )
+    }
+    return undefined
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  const apiDescription = renderProviderDescription()
+
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+  return (
+    <DialogPrompt
+      title={props.title}
+      placeholder="API key"
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      description={apiDescription}
+      onConfirm={async (value) => {
+        if (!value) return
+        await client.auth.set({
+          providerID: props.providerID,
+          auth: {
+            type: "api",
+            key: value,
+          },
+        })
+        await client.instance.dispose()
+        await sync.bootstrap()
+        dialog.replace(() => <DialogModel providerID={props.providerID} />)
+      }}
+    />
+  )
+}

@@ -1,0 +1,14 @@
+{
+  "files.exclude": {
+    "**/.opencode/runtime": true
+  },
+  "files.watcherExclude": {
+    "**/.opencode/runtime/**": true
+  },
+  "search.exclude": {
+    "**/.opencode/runtime/**": true
+  },
+  "recommendations": [
+    "oven.bun-vscode"
+  ]
+}

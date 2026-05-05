@@ -1,0 +1,5 @@
+Manage a persistent terminal session for long-running processes like dev servers, watchers, and REPLs. Prefer this tool over `shell` when the process should keep running across turns or when you need to read more output later, send input, resize the terminal, or stop it explicitly.
+
+Use action="start" to launch a managed terminal and get back a terminal_id. If you omit `command`, the managed terminal starts the preferred system shell for the current runtime. Use action="read" or action="status" to inspect recent output, action="write" to send input, action="resize" to adjust the terminal size, action="stop" to terminate and remove it, and action="list" to see known managed terminals.
+
+The terminal keeps a rolling output buffer. `read` returns the current buffer and a cursor value. If you want only newer output on the next read, pass that cursor back as `cursor`.

@@ -1,0 +1,21 @@
+use_default_settings: true
+
+server:
+  limiter: false
+  public_instance: false
+  secret_key: "opencodex-tor-2026-z7f4k2m9r1t8"
+
+search:
+  safe_search: 0
+  formats:
+    - html
+    - json
+
+outgoing:
+  proxies:
+    all://:
+      - socks5://tor:9050
+  request_timeout: 15.0
+  max_request_timeout: 20.0
+  pool_connections: 10
+  pool_maxsize: 5

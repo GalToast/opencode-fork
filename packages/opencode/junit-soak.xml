@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="bun test" tests="1" assertions="10" failures="0" skipped="0" time="14.5077033">
+  <testsuite name="C:\Users\HP\repos\opencode\packages\opencode\test\scheduler\soak.test.ts" file="C:\Users\HP\repos\opencode\packages\opencode\test\scheduler\soak.test.ts" tests="1" assertions="10" failures="0" skipped="0" time="0" hostname="">
+    <testsuite name="scheduler soak" file="C:\Users\HP\repos\opencode\packages\opencode\test\scheduler\soak.test.ts" line="12" tests="1" assertions="10" failures="0" skipped="0" time="5.312" hostname="">
+      <testcase name="mixed load autoscales lanes and drains without dropping work" classname="scheduler soak" time="5.312" file="C:\Users\HP\repos\opencode\packages\opencode\test\scheduler\soak.test.ts" line="14" assertions="10" />
+    </testsuite>
+  </testsuite>
+</testsuites>

@@ -1,0 +1,24 @@
+                                                                                
+ slash dispatch probe: /tasks                                                   
+     Tracker  |  [L]ist / [D]AG                                                 
+                                                                                
+     Total: 6  Open: 2  In Progress: 2  Blocked: 1  Closed: 1                   
+                                                                                
+     Path:                                                                      
+     .opencode/tracker/root-session.json                                        
+      [copy]                                                                    
+                                                                                
+                                                                                
+     Tasks (4)                                                                  
+                                                                                
+     Select to copy reference                                                   
+                                                                                
+                                                                                
+     Status: [A]ll / [O]pen / [I]n Progress / [B]locked / [C]losed              
+                                                                                
+     Filter tasks                                                               
+                                                                                
+     ▸ Wire screenshot artifact ⊘ blocked · 2 deps aa0004                       
+                                                                                
+     ◆ Restore TUI proof path ◐ in progress · 1 art aa0001                      
+                                                                                

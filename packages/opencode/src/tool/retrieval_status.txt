@@ -1,0 +1,7 @@
+Inspect retrieval lane performance and recent retrieval runs.
+
+Use this to see which retrieval lanes are actually being used, whether they are matched or mixed,
+which index space they query, and whether they are hitting provider-backed or fallback paths.
+
+This is useful for benchmarking `fast`, `quality`, and `auto`, and for understanding whether
+the retrieval substrate is behaving as intended on the current machine and workload.

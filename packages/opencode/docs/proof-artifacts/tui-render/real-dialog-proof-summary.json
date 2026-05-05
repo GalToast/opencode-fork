@@ -1,0 +1,57 @@
+{
+  "timestamp": "2026-05-02T00:50:05.285Z",
+  "importsRealModules": [
+    "DialogPlan",
+    "DialogTracker"
+  ],
+  "trackerModes": [
+    "list",
+    "dag"
+  ],
+  "slashCommandWiring": {
+    "sourceFile": "src/cli/cmd/tui/routes/session/plan-tracker-command-options.tsx",
+    "plan": true,
+    "tracker": true
+  },
+  "slashCommandDispatch": [
+    {
+      "slash": "plan",
+      "triggered": true,
+      "replaced": true
+    },
+    {
+      "slash": "tracker",
+      "triggered": true,
+      "replaced": true
+    },
+    {
+      "slash": "tasks",
+      "triggered": true,
+      "replaced": true
+    }
+  ],
+  "mocked": [
+    "useSync",
+    "useDialog",
+    "useToast",
+    "useTheme",
+    "useKeybind",
+    "Clipboard",
+    "SkillRegistry",
+    "DialogSelect"
+  ],
+  "productModelCalls": false,
+  "networkCalls": false,
+  "artifacts": [
+    "dialog-plan-frame.txt",
+    "dialog-tracker-frame.txt",
+    "dialog-tracker-list-frame.txt",
+    "dialog-tracker-dag-frame.txt",
+    "slash-command-wiring.json",
+    "slash-plan-dispatch-frame.txt",
+    "slash-tracker-dispatch-frame.txt",
+    "slash-tasks-alias-dispatch-frame.txt",
+    "slash-command-dispatch.json",
+    "real-dialog-proof.html"
+  ]
+}

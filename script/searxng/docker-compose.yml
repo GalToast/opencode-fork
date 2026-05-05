@@ -1,0 +1,24 @@
+services:
+  searxng:
+    image: searxng/searxng:latest
+    container_name: searxng
+    restart: unless-stopped
+    ports:
+      - "8889:8080"
+    environment:
+      - GRANIAN_HOST=0.0.0.0
+      - SEARXNG_LIMITER=false
+      - SEARXNG_SECRET_KEY=opencodex-local-2026-z7f4k2m9r1t8
+      - FORCE_OWNERSHIP=false
+    volumes:
+      - ./searxng-data:/var/cache/searxng
+      - ./searxng-settings.yml:/etc/searxng/settings.yml
+      - ./limiter.toml:/etc/searxng/limiter.toml
+    healthcheck:
+      test: ["CMD-SHELL", "python - <<'PY'\nimport urllib.request, sys\ntry:\n    with urllib.request.urlopen('http://127.0.0.1:8080/config', timeout=5) as r:\n        sys.exit(0 if r.status == 200 else 1)\nexcept Exception:\n    sys.exit(1)\nPY"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
+    tty: true
+    stdin_open: true

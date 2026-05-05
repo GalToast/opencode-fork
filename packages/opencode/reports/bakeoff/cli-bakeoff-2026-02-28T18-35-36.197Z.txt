@@ -1,0 +1,15 @@
+CLI bake-off (2026-02-28T18:41:33.510Z)
+root: C:\Users\HP\repos\opencode\packages\opencode
+run_count: 2
+timeout_ms: 180000
+codex_parallel_window_ms: 85434
+
+FAIL opencode_suite 119203ms code:1
+PASS opencode_smoke 25528ms code:0 token:yes
+PASS opencode_smoke 18216ms code:0 token:yes
+PASS codex_smoke 57025ms code:0 token:yes
+PASS codex_smoke 51690ms code:0 token:yes
+PASS codex_parallel 83557ms code:0 token:yes
+PASS codex_parallel 85387ms code:0 token:yes
+
+json: C:\Users\HP\repos\opencode\packages\opencode\reports\bakeoff\cli-bakeoff-2026-02-28T18-35-36.197Z.json

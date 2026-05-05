@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="bun test" tests="6" assertions="17" failures="3" skipped="0" time="31.6011192">
+  <testsuite name="C:\Users\HP\repos\opencode\packages\opencode\test\tool\task-mailbox-smoke.test.ts" file="C:\Users\HP\repos\opencode\packages\opencode\test\tool\task-mailbox-smoke.test.ts" tests="6" assertions="17" failures="3" skipped="0" time="5.016" hostname="">
+    <testsuite name="tool.task mailbox smoke" file="C:\Users\HP\repos\opencode\packages\opencode\test\tool\task-mailbox-smoke.test.ts" line="13" tests="5" assertions="17" failures="2" skipped="0" time="20.968" hostname="">
+      <testcase name="runs relay + broadcast through supervisor and emits inbox lifecycle updates" classname="tool.task mailbox smoke" time="3.937" file="C:\Users\HP\repos\opencode\packages\opencode\test\tool\task-mailbox-smoke.test.ts" line="43" assertions="9" />
+      <testcase name="supports queued turn controls: pause, resume, escalate" classname="tool.task mailbox smoke" time="2.703" file="C:\Users\HP\repos\opencode\packages\opencode\test\tool\task-mailbox-smoke.test.ts" line="189" assertions="6" />
+      <testcase name="steer abort on parent turn does not cancel foreground subagent session" classname="tool.task mailbox smoke" time="4.297" file="C:\Users\HP\repos\opencode\packages\opencode\test\tool\task-mailbox-smoke.test.ts" line="369" assertions="1" />
+      <testcase name="steer abort fallback does not cancel foreground subagent with delayed steer receipt" classname="tool.task mailbox smoke" time="5.016" file="C:\Users\HP\repos\opencode\packages\opencode\test\tool\task-mailbox-smoke.test.ts" line="477" assertions="0">
+        <failure type="TimeoutError" />
+      </testcase>
+      <testcase name="parent abort cancellation waits briefly for steer pending race" classname="tool.task mailbox smoke" time="5.015" file="C:\Users\HP\repos\opencode\packages\opencode\test\tool\task-mailbox-smoke.test.ts" line="593" assertions="1">
+        <failure type="TimeoutError" />
+      </testcase>
+    </testsuite>
+    <testcase name="(unnamed)" classname="" time="5.016" file="C:\Users\HP\repos\opencode\packages\opencode\test\tool\task-mailbox-smoke.test.ts" assertions="0">
+      <failure type="TimeoutError" />
+    </testcase>
+  </testsuite>
+</testsuites>

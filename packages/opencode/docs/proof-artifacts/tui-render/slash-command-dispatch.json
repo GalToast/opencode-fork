@@ -1,0 +1,29 @@
+[
+  {
+    "slash": "plan",
+    "hasPlan": true,
+    "hasTracker": true,
+    "hasTasksAlias": true,
+    "triggered": true,
+    "replaced": true,
+    "size": "medium"
+  },
+  {
+    "slash": "tracker",
+    "hasPlan": true,
+    "hasTracker": true,
+    "hasTasksAlias": true,
+    "triggered": true,
+    "replaced": true,
+    "size": "large"
+  },
+  {
+    "slash": "tasks",
+    "hasPlan": true,
+    "hasTracker": true,
+    "hasTasksAlias": true,
+    "triggered": true,
+    "replaced": true,
+    "size": "large"
+  }
+]

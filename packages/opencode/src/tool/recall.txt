@@ -1,0 +1,7 @@
+Recall semantically related prior local memory from the retrieval substrate.
+
+Use this to intentionally search indexed session text, assistant outputs, tool failures,
+diffs, docs, and other retrieval corpora without dumping large histories into the prompt.
+
+Optional `source_types` lets you narrow recall to specific corpora such as
+`task_artifact`, `code_chunk`, or `tool_failure`.

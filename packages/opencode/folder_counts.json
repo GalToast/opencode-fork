@@ -1,0 +1,15 @@
+{
+  "memory": 7,
+  "file": 4,
+  "plugin": 2,
+  "project": 1,
+  "cli": 678,
+  "provider": 8,
+  "tool": 20,
+  "server": 1,
+  "lsp": 6,
+  "session": 53,
+  "mcp": 14,
+  "mecha": 4,
+  "util": 1
+}
