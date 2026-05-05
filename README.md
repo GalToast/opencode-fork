@@ -2,6 +2,8 @@
 
 This is the **opencode-fork** branch of [GalToast/opencode-fork](https://github.com/GalToast/opencode-fork/tree/opencode-fork), maintained by McCullough Digital as a practical OpenCodex fork of the upstream [opencode-ai](https://opencode.ai) project.
 
+OpenCodex is a practical AI coding workbench that extends OpenCode with operator supervision, task DAG orchestration, semantic retrieval, TUI proof artifacts, and self-editing harness experiments. The goal is not a cosmetic fork; it is a working surface for coordinating long-running agentic software work with clearer evidence, state, and recovery paths.
+
 ### What changed vs. upstream
 
 - **Operator / session surface** - session operator routes and plan state surfaces for supervising active work.
@@ -21,6 +23,7 @@ This is the **opencode-fork** branch of [GalToast/opencode-fork](https://github.
 | Semantic retrieval | `packages/opencode/src/retrieval/` |
 | TUI / launcher proof | `packages/opencode/docs/proof-artifacts/tui-render/`, `packages/opencode/test/cli/tui-render-proof.test.tsx` |
 | Self-editing harness | `packages/opencode/src/harness/` |
+| Publish hygiene | [docs/opencodex-publish-workflow.md](docs/opencodex-publish-workflow.md) |
 
 ### Verification Status
 
