@@ -60,6 +60,11 @@ packages/opencode/*.out
 packages/opencode/*.log
 packages/opencode/*.json.log
 packages/opencode/*.txt
+packages/opencode/db.sqlite
+packages/opencode/tmp-*
+packages/opencode/tmp_*
+packages/opencode/src/**/*.untracked-backup-*
+infra/secret.ts
 
 # Local business outreach artifacts do not belong in this public fork
 outreach/
