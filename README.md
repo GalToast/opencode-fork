@@ -14,7 +14,7 @@ OpenCodex shifts the surface from single-turn code assistance toward long-horizo
 - **Stateful agent workbench** - Node-backed persistent session runtime plus ephemeral helper creation through the registered `workbench` tool.
 - **Typecheck / test stabilization** - `packages/opencode` typecheck and TUI lint are clean, with focused tool/TUI tests passing in the current publish prep.
 
-For the detailed feature guide and caveats, start with [packages/opencode/README.md](packages/opencode/README.md). For a source-backed tool inventory, see [docs/opencodex-runtime-surface.md](docs/opencodex-runtime-surface.md).
+For a recruiter-facing inspection path, see [docs/recruiter-quickstart.md](docs/recruiter-quickstart.md). For the detailed feature guide and caveats, start with [packages/opencode/README.md](packages/opencode/README.md). For a source-backed tool inventory, see [docs/opencodex-runtime-surface.md](docs/opencodex-runtime-surface.md).
 
 ### Implementation Evidence
 
@@ -43,7 +43,7 @@ For the detailed feature guide and caveats, start with [packages/opencode/README
 
 ### Upstream Base
 
-OpenCodex remains based on upstream OpenCode and keeps the upstream installation and platform notes below for compatibility context. The fork-specific proof surface is documented above and in [packages/opencode/README.md](packages/opencode/README.md).
+OpenCodex remains based on upstream OpenCode and keeps the upstream installation and platform notes below for compatibility context. Use those commands for baseline OpenCode compatibility; inspect or build this repository for OpenCodex-specific systems work. The fork-specific proof surface is documented above and in [packages/opencode/README.md](packages/opencode/README.md).
 
 ### Installation
 
