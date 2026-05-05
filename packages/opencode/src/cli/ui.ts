@@ -54,7 +54,12 @@ function logo(pad?: string) {
     shadow: "\x1b[38;5;238m",
     bg: "\x1b[48;5;238m",
   }
-  const gap = "    "
+  const gap = "      "
+  const padWidth = pad?.length ?? 0
+  const leftWidth = Math.max(...glyphs.left.map((line) => line.length))
+  const rightWidth = Math.max(...glyphs.right.map((line) => line.length))
+  const terminalWidth = process.stdout.columns || Number.POSITIVE_INFINITY
+  const stacked = terminalWidth < padWidth + leftWidth + gap.length + rightWidth
   const draw = (line: string, fg: string, shadow: string, bg: string) => {
     const parts: string[] = []
     for (const char of line) {
@@ -78,14 +83,26 @@ function logo(pad?: string) {
     }
     return parts.join("")
   }
-  glyphs.left.forEach((row, index) => {
-    if (pad) result.push(pad)
-    result.push(draw(row, left.fg, left.shadow, left.bg))
-    result.push(gap)
-    const other = glyphs.right[index] ?? ""
-    result.push(draw(other, right.fg, right.shadow, right.bg))
+  if (stacked) {
+    glyphs.left.forEach((row) => {
+      if (pad) result.push(pad)
+      result.push(draw(row, left.fg, left.shadow, left.bg), EOL)
+    })
     result.push(EOL)
-  })
+    glyphs.right.forEach((row) => {
+      if (pad) result.push(pad)
+      result.push(draw(row, right.fg, right.shadow, right.bg), EOL)
+    })
+  } else {
+    glyphs.left.forEach((row, index) => {
+      if (pad) result.push(pad)
+      result.push(draw(row, left.fg, left.shadow, left.bg))
+      result.push(gap)
+      const other = glyphs.right[index] ?? ""
+      result.push(draw(other, right.fg, right.shadow, right.bg))
+      result.push(EOL)
+    })
+  }
   return result.join("").trimEnd()
 }
 

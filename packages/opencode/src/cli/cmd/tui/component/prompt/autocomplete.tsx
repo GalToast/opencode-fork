@@ -24,11 +24,6 @@ function trace(event: string, extra?: Record<string, unknown>) {
   traceLog.info(event, extra)
 }
 
-function removeLineRange(input: string) {
-  const hashIndex = input.lastIndexOf("#")
-  return hashIndex !== -1 ? input.substring(0, hashIndex) : input
-}
-
 function extractLineRange(input: string) {
   const hashIndex = input.lastIndexOf("#")
   if (hashIndex === -1) {
@@ -129,7 +124,6 @@ export function Autocomplete(props: {
   agentStyleId: number
   promptPartTypeId: () => number
 }) {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const client: OpencodeClient = useSDK().client
   const sync = useSync() as unknown as SyncAutocompleteContext
   const command = useCommandDialog() as unknown as CommandDialogContext
@@ -185,7 +179,7 @@ export function Autocomplete(props: {
 
   const position = createMemo(() => {
     if (!store.visible) return { x: 0, y: 0, width: 0 }
-    const dims = dimensions()
+    dimensions()
     positionTick()
     const anchor = props.anchor()
     const parent = anchor.parent

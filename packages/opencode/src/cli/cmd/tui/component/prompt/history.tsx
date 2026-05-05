@@ -35,7 +35,6 @@ function parsePromptHistoryLine(line: string): PromptInfo | undefined {
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/unbound-method
 export const { use: usePromptHistory, provider: PromptHistoryProvider } = createSimpleContext({
   name: "PromptHistory",
   init: () => {

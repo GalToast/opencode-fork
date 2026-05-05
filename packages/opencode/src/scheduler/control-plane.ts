@@ -290,7 +290,7 @@ export namespace SchedulerControl {
 
 const state = Instance.state(
     () => createState(),
-    (current) => {
+    async (current) => {
       for (const lane of laneList()) {
         for (const job of current.queues[lane]) {
           job.reject?.(new Error("Scheduler disposed"))

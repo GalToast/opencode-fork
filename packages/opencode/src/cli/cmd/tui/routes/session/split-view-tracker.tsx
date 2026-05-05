@@ -2,7 +2,6 @@ import { createMemo, For, Show } from "solid-js"
 import { useSync, getRootSessionID } from "@tui/context/sync"
 import { useTheme } from "@tui/context/theme"
 import { TextAttributes } from "@opentui/core"
-import type { TrackerTask } from "@/tracker/types"
 import { SkillRegistry } from "@/skill/registry"
 
 export function SplitViewTracker(props: { sessionID: string; maxHeight?: number }) {

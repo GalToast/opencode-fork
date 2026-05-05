@@ -336,12 +336,12 @@ describe("Project.update", () => {
   })
 
   test("should throw error when project not found", async () => {
-    await expect(
+    expect(() =>
       Project.update({
         projectID: ProjectID.make("nonexistent-project-id"),
         name: "Should Fail",
       }),
-    ).rejects.toThrow("Project not found: nonexistent-project-id")
+    ).toThrow("Project not found: nonexistent-project-id")
   })
 
   test("should emit GlobalBus event on update", async () => {
@@ -393,7 +393,7 @@ describe("Project.list and Project.get", () => {
 
     const all = Project.list()
     expect(all.length).toBeGreaterThan(0)
-    expect(all.find((p) => p.id === project.id)).toBeDefined()
+    expect(all.find((p: Project.Info) => p.id === project.id)).toBeDefined()
   })
 
   test("get returns project by id", async () => {

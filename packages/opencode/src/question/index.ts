@@ -3,6 +3,8 @@ import { BusEvent } from "@/bus/bus-event"
 import { Identifier } from "@/id/id"
 import { Instance } from "@/project/instance"
 import { Log } from "@/util/log"
+import { QuestionID } from "./schema"
+import { Effect, Layer, ServiceMap } from "effect"
 import z from "zod"
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -90,6 +92,19 @@ export namespace Question {
     pending: Record<string, Pending>
   }
 
+  export interface Interface {
+    readonly ask: (input: {
+      sessionID: string
+      questions: Info[]
+      tool?: { messageID: string; callID: string }
+    }) => Effect.Effect<Answer[]>
+    readonly reply: (input: { requestID: string; answers: Answer[] }) => Effect.Effect<void>
+    readonly reject: (requestID: string) => Effect.Effect<void>
+    readonly list: () => Effect.Effect<Request[]>
+  }
+
+  export class Service extends ServiceMap.Service<Service, Interface>()("@opencode/Question") {}
+
   const state = Instance.state((): State => ({
     pending: {},
   }))
@@ -168,4 +183,15 @@ export namespace Question {
   export function list(): Request[] {
     return Object.values(state().pending).map((pending) => pending.info)
   }
+
+  export const defaultLayer = Layer.succeed(
+    Service,
+    Service.of({
+      ask: (input) => Effect.promise(() => ask(input)),
+      reply: (input) => Effect.sync(() => reply(input)),
+      reject: (requestID) => Effect.sync(() => reject(requestID)),
+      list: () => Effect.sync(() => list()),
+    }),
+  )
+  export const layer = defaultLayer
 }

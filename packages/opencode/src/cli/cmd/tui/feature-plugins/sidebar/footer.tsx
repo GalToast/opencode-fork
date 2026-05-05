@@ -24,6 +24,7 @@ function View(props: { api: TuiPluginApi }) {
     }
   })
 
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
   return (
     <box gap={1}>
       <Show when={show()}>
@@ -74,15 +75,17 @@ function View(props: { api: TuiPluginApi }) {
   )
 }
 
-const tui: TuiPlugin = async (api) => {
+const tui: TuiPlugin = (api) => {
   api.slots.register({
     order: 100,
     slots: {
       sidebar_footer() {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
         return <View api={api} />
       },
     },
   })
+  return Promise.resolve()
 }
 
 const plugin: TuiPluginModule & { id: string } = {

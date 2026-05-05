@@ -70,7 +70,7 @@ const state = Instance.state(
     events: [] as ExecutionEvent[],
     mtimeMs: -1,
   }),
-  (current) => {
+  async (current) => {
     current.loaded = false
     current.events = []
     current.mtimeMs = -1

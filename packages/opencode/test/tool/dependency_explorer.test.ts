@@ -1,9 +1,10 @@
-import { describe, test, expect, mock, afterEach } from "bun:test"
+import { describe, test, expect, mock, afterEach, spyOn } from "bun:test"
 import path from "path"
 import fs from "fs/promises"
 import { DependencyExplorerTool } from "../../src/tool/dependency_explorer"
 import { Instance } from "../../src/project/instance"
 import { tmpdir } from "../fixture/fixture"
+import { LSP } from "../../src/lsp"
 
 const ctx = {
   sessionID: "test-dependency-explorer" as any,
@@ -26,18 +27,16 @@ describe("tool.dependency_explorer", () => {
     const filepath = path.join(tmp.path, "file.ts")
     await fs.writeFile(filepath, "class MyClass {}", "utf-8")
 
-    mock.module("../../src/lsp", () => ({
-      LSP: {
-        workspaceSymbol: async () => ([{
-          name: "MyClass",
-          kind: 5,
-          location: {
-            uri: "file://" + filepath.replace(/\\/g, "/"),
-            range: { start: { line: 0, character: 0 }, end: { line: 0, character: 10 } }
-          }
-        }])
-      }
-    }))
+    spyOn(LSP, "workspaceSymbol").mockResolvedValue([
+      {
+        name: "MyClass",
+        kind: 5,
+        location: {
+          uri: "file://" + filepath.replace(/\\/g, "/"),
+          range: { start: { line: 0, character: 0 }, end: { line: 0, character: 10 } },
+        },
+      },
+    ] as any)
 
     await Instance.provide({
       directory: tmp.path,

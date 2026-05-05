@@ -114,7 +114,7 @@ export function win32InstallCtrlCGuard() {
       return result
     }
 
-    stdin.setRawMode = wrapped
+    stdin.setRawMode = wrapped as (mode: boolean) => RawModeStdin
   }
 
   // Ensure it's cleared immediately too (covers any earlier mode changes).

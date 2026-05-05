@@ -26,7 +26,7 @@ const shared = create()
 
 const state = Instance.state(
   () => create(),
-  (entry) => {
+  async (entry) => {
     for (const timer of entry.timers.values()) {
       clearInterval(timer)
     }

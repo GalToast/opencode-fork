@@ -32,6 +32,7 @@ function View(props: { api: TuiPluginApi; session_id: string }) {
     }
   })
 
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
   return (
     <box>
       <text fg={theme().text}>
@@ -44,15 +45,17 @@ function View(props: { api: TuiPluginApi; session_id: string }) {
   )
 }
 
-const tui: TuiPlugin = async (api) => {
+const tui: TuiPlugin = (api) => {
   api.slots.register({
     order: 100,
     slots: {
       sidebar_content(_ctx, props) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
         return <View api={api} session_id={props.session_id} />
       },
     },
   })
+  return Promise.resolve()
 }
 
 const plugin: TuiPluginModule & { id: string } = {

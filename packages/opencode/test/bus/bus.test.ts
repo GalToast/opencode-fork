@@ -107,7 +107,7 @@ describe("Bus", () => {
 
       await withInstance(tmp.path, async () => {
         Bus.subscribeAll((evt) => {
-          received.push(evt.type)
+          received.push((evt as { type: string }).type)
         })
         await Bus.publish(TestEvent.Ping, { value: 1 })
         await Bun.sleep(10)
@@ -122,7 +122,7 @@ describe("Bus", () => {
 
       await withInstance(tmp.path, async () => {
         Bus.subscribeAll((evt) => {
-          received.push(evt.type)
+          received.push((evt as { type: string }).type)
         })
         await Bun.sleep(10)
         await Bus.publish(TestEvent.Ping, { value: 1 })
@@ -201,7 +201,7 @@ describe("Bus", () => {
 
       await withInstance(tmp.path, async () => {
         Bus.subscribeAll((evt) => {
-          received.push(evt.type)
+          received.push((evt as { type: string }).type)
         })
         await Bun.sleep(10)
         await Bus.publish(TestEvent.Ping, { value: 1 })

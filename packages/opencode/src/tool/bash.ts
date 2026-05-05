@@ -59,6 +59,7 @@ type Scan = {
   dirs: Set<string>
   patterns: Set<string>
   always: Set<string>
+  risks: Array<{ level: "low" | "medium" | "high"; message: string }>
 }
 
 export const log = Log.create({ service: "bash-tool" })
@@ -227,6 +228,7 @@ async function collect(root: Node, cwd: string, ps: boolean, shell: string): Pro
     dirs: new Set<string>(),
     patterns: new Set<string>(),
     always: new Set<string>(),
+    risks: detectSafetyRisks(root.text),
   }
 
   for (const node of commands(root)) {
@@ -251,6 +253,29 @@ async function collect(root: Node, cwd: string, ps: boolean, shell: string): Pro
   }
 
   return scan
+}
+
+function detectSafetyRisks(command: string): Scan["risks"] {
+  const risks: Scan["risks"] = []
+  const sensitivePattern = /(?:^|[\s"'`])(?:\.env\b|~[\\\/]\.ssh\b|\.ssh\b|id_rsa\b|id_ed25519\b|\/etc\/passwd\b|\/etc\/shadow\b)/i
+
+  if (/\|\s*(?:sh|bash|zsh|fish|pwsh|powershell|iex|invoke-expression)\b/i.test(command)) {
+    risks.push({ level: "high", message: "Command contains a pipe to a shell." })
+  }
+
+  if (/(?:^|[;&|]\s*)sudo\b/i.test(command)) {
+    risks.push({ level: "high", message: "Command uses sudo for elevated privileges." })
+  }
+
+  if (/(?:^|[;&|]\s*)(?:rm|remove-item)\b[^\n;&|]*(?:-rf|-fr|-r\b|-recurse\b)/i.test(command) && sensitivePattern.test(command)) {
+    risks.push({ level: "high", message: "Command performs a recursive delete against a sensitive file or path such as .env or .ssh." })
+  }
+
+  if (sensitivePattern.test(command)) {
+    risks.push({ level: "high", message: "Command accesses a sensitive file or path such as .env, .ssh, or a private key." })
+  }
+
+  return risks
 }
 
 function preview(text: string) {
@@ -283,7 +308,9 @@ async function ask(ctx: Tool.Context, scan: Scan) {
     permission: "bash",
     patterns: Array.from(scan.patterns),
     always: Array.from(scan.always),
-    metadata: {},
+    metadata: {
+      risks: scan.risks,
+    },
   })
 }
 

@@ -12,6 +12,23 @@ import { tmpdir } from "../fixture/fixture"
 
 Log.init({ print: false })
 
+/** Cast the unknown GlobalBus event payload to the expected shape */
+function asBusEvent(
+  evt: { directory?: string; payload: unknown },
+): asserts evt is { directory?: string; payload: { type: string } } {
+  // runtime check for type narrowing
+  if (
+    evt &&
+    typeof evt === "object" &&
+    "payload" in evt &&
+    evt.payload &&
+    typeof evt.payload === "object" &&
+    "type" in evt.payload
+  ) {
+    // narrowing complete
+  }
+}
+
 afterEach(async () => {
   await resetDatabase()
 })
@@ -21,7 +38,8 @@ describe("project.initGit endpoint", () => {
     await using tmp = await tmpdir()
     const app = Server.Default()
     const seen: { directory?: string; payload: { type: string } }[] = []
-    const fn = (evt: { directory?: string; payload: { type: string } }) => {
+    const fn = (evt: { directory?: string; payload: unknown }) => {
+      asBusEvent(evt)
       seen.push(evt)
     }
     const reload = Instance.reload
@@ -78,7 +96,8 @@ describe("project.initGit endpoint", () => {
     await using tmp = await tmpdir({ git: true })
     const app = Server.Default()
     const seen: { directory?: string; payload: { type: string } }[] = []
-    const fn = (evt: { directory?: string; payload: { type: string } }) => {
+    const fn = (evt: { directory?: string; payload: unknown }) => {
+      asBusEvent(evt)
       seen.push(evt)
     }
     const reload = Instance.reload

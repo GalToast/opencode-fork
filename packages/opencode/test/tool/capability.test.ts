@@ -2,9 +2,10 @@ import { afterEach, describe, expect, spyOn, test } from "bun:test"
 import { CapabilityRuntime } from "../../src/capability/runtime"
 import { CapabilityTool } from "../../src/tool/capability"
 import { MCP } from "../../src/mcp"
+import { MessageID, SessionID } from "../../src/session/schema"
 
 describe("tool.capability", () => {
-  const sessionID = "session_tool_capability"
+  const sessionID = SessionID.make("session_tool_capability")
 
   afterEach(() => {
     CapabilityRuntime.reset(sessionID)
@@ -16,19 +17,12 @@ describe("tool.capability", () => {
       "chrome-devtools": { status: "connected" } as any,
       searxng: { status: "connected" } as any,
     })
-    const toolsSpy = spyOn(MCP, "tools").mockImplementation(async (clients?: string[]) => {
-      if (clients?.includes("playwright")) {
-        return {
-          playwright_browser_navigate: {} as any,
-          playwright_browser_snapshot: {} as any,
-        }
-      }
-      if (clients?.includes("chrome-devtools")) {
-        return {
-          "chrome-devtools_click": {} as any,
-        }
-      }
-      return {}
+    const toolsSpy = spyOn(MCP, "tools").mockImplementation(async () => {
+      return {
+        playwright_browser_navigate: { client: "playwright", name: "playwright_browser_navigate" },
+        playwright_browser_snapshot: { client: "playwright", name: "playwright_browser_snapshot" },
+        "chrome-devtools_click": { client: "chrome-devtools", name: "chrome-devtools_click" },
+      } as any
     })
 
     try {
@@ -40,7 +34,7 @@ describe("tool.capability", () => {
         },
         {
           sessionID,
-          messageID: "message_tool_capability",
+          messageID: MessageID.make("message_tool_capability"),
           agent: "build",
           abort: new AbortController().signal,
           messages: [],
@@ -84,7 +78,7 @@ describe("tool.capability", () => {
         },
         {
           sessionID,
-          messageID: "message_tool_capability_enable",
+          messageID: MessageID.make("message_tool_capability_enable"),
           agent: "build",
           abort: new AbortController().signal,
           messages: [],

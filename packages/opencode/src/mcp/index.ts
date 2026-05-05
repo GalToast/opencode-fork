@@ -635,7 +635,10 @@ export namespace MCP {
 
               const timeout = entry?.timeout ?? defaultTimeout
               for (const mcpTool of listed) {
-                result[sanitize(clientName) + "_" + sanitize(mcpTool.name)] = convertMcpTool(mcpTool, client, timeout)
+                result[sanitize(clientName) + "_" + sanitize(mcpTool.name)] = Object.assign(
+                  convertMcpTool(mcpTool, client, timeout),
+                  { client: clientName, name: mcpTool.name },
+                )
               }
             }),
           { concurrency: "unbounded" },
@@ -925,10 +928,20 @@ export namespace MCP {
       runPromise((svc) => svc.prompts()),
       runPromise((svc) => svc.resources()),
     ])
-    const entries: Array<{ id: string; kind: string; source: string; title: string; description?: string; client?: string; hints: string[] }> = []
-    for (const tool of Object.values(tools) as Array<Tool & { client: string; name: string }>) {
+    const entries: Array<{
+      id: string
+      kind: string
+      source: string
+      title: string
+      description?: string
+      client?: string
+      hints: string[]
+      uri?: string
+      metadata?: Record<string, unknown>
+    }> = []
+    for (const [id, tool] of Object.entries(tools) as Array<[string, Tool & { client: string; name: string }]>) {
       entries.push({
-        id: `${tool.client}:${tool.name}`,
+        id,
         kind: "mcp_tool",
         source: tool.client,
         title: tool.name,
@@ -939,24 +952,28 @@ export namespace MCP {
     }
     for (const prompt of Object.values(prompts)) {
       entries.push({
-        id: `${prompt.client}:${prompt.name}`,
+        id: `${sanitize(prompt.client)}:${sanitize(prompt.name)}`,
         kind: "mcp_prompt",
         source: prompt.client,
         title: prompt.name,
         description: prompt.description,
         client: prompt.client,
-        hints: [],
+        hints: prompt.arguments?.filter((arg) => arg.required).map((arg) => arg.name) ?? [],
       })
     }
     for (const resource of Object.values(resources)) {
       entries.push({
-        id: `${resource.client}:${resource.uri}`,
+        id: `${sanitize(resource.client)}:${resource.uri}`,
         kind: "mcp_resource",
         source: resource.client,
         title: resource.name ?? resource.uri,
         description: resource.description,
         client: resource.client,
         hints: [],
+        uri: resource.uri,
+        metadata: {
+          mimeType: resource.mimeType,
+        },
       })
     }
     return entries

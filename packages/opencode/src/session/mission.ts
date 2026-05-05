@@ -1,5 +1,5 @@
 import { Bus } from "@/bus"
-import { BusEvent } from "@/bus/bus-event"
+import { BusEvent, type BusEventDefinition } from "@/bus/bus-event"
 import { Identifier } from "@/id/id"
 import { Storage } from "@/storage/storage"
 import z from "zod"
@@ -109,7 +109,7 @@ const SteerEvent = z.object({
   mirrored: z.boolean().optional(),
 })
 
-export function init(events: { Steer: BusEvent.Definition }) {
+export function init(events: { Steer: BusEventDefinition }) {
   Bus.subscribe(events.Steer, (payload) => {
     const p = SteerEvent.parse(payload.properties)
     if (p.cleared || p.mirrored) return

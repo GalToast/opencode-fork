@@ -112,7 +112,7 @@ function raw(type: string, callback: (event: unknown) => void) {
   }
 }
 
-interface Interface {
+export interface Interface {
   readonly publish: <Definition extends BusEventDefinition>(
     def: Definition,
     properties: z.output<Definition["properties"]>,
@@ -132,11 +132,14 @@ interface Interface {
   readonly subscribeAll: (callback: (event: unknown) => void) => Effect.Effect<() => void>
 }
 
-class BusService extends ServiceMap.Service<BusService, Interface>()("@opencode/Bus") {}
+export type BusInterface = Interface
+
+// Service class for Effect dependency injection
+export class Service extends ServiceMap.Service<Service, Interface>()("@opencode/Bus") {}
 
 const layer = Layer.succeed(
-  BusService,
-  BusService.of({
+  Service,
+  Service.of({
     publish: (def, properties) => Effect.promise(() => publish(def, properties)),
     subscribe: (def, callback) => Effect.sync(() => subscribe(def, callback)),
     subscribeCallback: (def, callback) => Effect.sync(() => subscribe(def, callback)),
@@ -146,7 +149,7 @@ const layer = Layer.succeed(
 )
 
 export const Bus = {
-  Service: BusService,
+  Service,
   layer,
   defaultLayer: layer,
   InstanceDisposed,

@@ -4,6 +4,7 @@ import { tmpdir } from "../fixture/fixture"
 import { Instance } from "../../src/project/instance"
 import { Agent } from "../../src/agent/agent"
 import { Permission } from "../../src/permission"
+import { ModelID, ProviderID } from "../../src/provider/schema"
 
 // Helper to evaluate permission for a tool with wildcard pattern
 function evalPerm(agent: Agent.Info | undefined, permission: string): Permission.Action | undefined {
@@ -145,7 +146,7 @@ test("free opencode models are projected into subagent-capable agent types", asy
       const freeAgent = await Agent.get("minimax-m2.5-free")
       expect(freeAgent).toBeDefined()
       expect(freeAgent?.mode).toBe("subagent")
-      expect(freeAgent?.model).toEqual({ providerID: "opencode", modelID: "minimax-m2.5-free" })
+      expect(freeAgent?.model).toEqual({ providerID: ProviderID.make("opencode"), modelID: ModelID.make("minimax-m2.5-free") })
       expect(freeAgent?.native).toBe(false)
       expect(evalPerm(freeAgent, "bash")).toBe("allow")
       expect(evalPerm(freeAgent, "todoread")).toBe("deny")
@@ -213,7 +214,7 @@ test("preferred alibaba coding plan models are projected into subagent-capable a
       const qwen = await Agent.get("qwen3.5-plus")
       expect(qwen).toBeDefined()
       expect(qwen?.mode).toBe("subagent")
-      expect(qwen?.model).toEqual({ providerID: "alibaba-coding-plan", modelID: "qwen3.5-plus" })
+      expect(qwen?.model).toEqual({ providerID: ProviderID.make("alibaba-coding-plan"), modelID: ModelID.make("qwen3.5-plus") })
       expect(qwen?.native).toBe(false)
       expect(evalPerm(qwen, "bash")).toBe("allow")
       expect(evalPerm(qwen, "todoread")).toBe("deny")
@@ -271,7 +272,7 @@ test("config can override or disable a projected free opencode agent type", asyn
       const minimax = await Agent.get("minimax-m2.5-free")
       expect(minimax?.description).toBe("Pinned MiniMax free worker")
       expect(minimax?.color).toBe("#00FFAA")
-      expect(minimax?.model).toEqual({ providerID: "opencode", modelID: "minimax-m2.5-free" })
+      expect(minimax?.model).toEqual({ providerID: ProviderID.make("opencode"), modelID: ModelID.make("minimax-m2.5-free") })
 
       const kimi = await Agent.get("kimi-k2.5-free")
       expect(kimi).toBeUndefined()

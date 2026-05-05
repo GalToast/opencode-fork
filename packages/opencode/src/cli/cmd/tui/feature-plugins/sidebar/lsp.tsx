@@ -9,6 +9,7 @@ function View(props: { api: TuiPluginApi }) {
   const list = createMemo(() => props.api.state.lsp())
   const off = createMemo(() => props.api.state.config.lsp === false)
 
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
   return (
     <box>
       <box flexDirection="row" gap={1} onMouseDown={() => list().length > 2 && setOpen((x) => !x)}>
@@ -26,36 +27,41 @@ function View(props: { api: TuiPluginApi }) {
           </text>
         </Show>
         <For each={list()}>
-          {(item) => (
-            <box flexDirection="row" gap={1}>
-              <text
-                flexShrink={0}
-                style={{
-                  fg: item.status === "connected" ? theme().success : theme().error,
-                }}
-              >
-                •
-              </text>
-              <text fg={theme().textMuted}>
-                {item.id} {item.root}
-              </text>
-            </box>
-          )}
+          {(item) => {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+            return (
+              <box flexDirection="row" gap={1}>
+                <text
+                  flexShrink={0}
+                  style={{
+                    fg: item.status === "connected" ? theme().success : theme().error,
+                  }}
+                >
+                  •
+                </text>
+                <text fg={theme().textMuted}>
+                  {item.id} {item.root}
+                </text>
+              </box>
+            )
+          }}
         </For>
       </Show>
     </box>
   )
 }
 
-const tui: TuiPlugin = async (api) => {
+const tui: TuiPlugin = (api) => {
   api.slots.register({
     order: 300,
     slots: {
       sidebar_content() {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
         return <View api={api} />
       },
     },
   })
+  return Promise.resolve()
 }
 
 const plugin: TuiPluginModule & { id: string } = {

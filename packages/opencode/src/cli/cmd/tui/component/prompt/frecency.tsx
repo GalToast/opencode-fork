@@ -15,7 +15,6 @@ function calculateFrecency(entry?: { frequency: number; lastOpen: number }): num
 
 const MAX_FRECENCY_ENTRIES = 1000
 
-// eslint-disable-next-line @typescript-eslint/unbound-method
 export const { use: useFrecency, provider: FrecencyProvider } = createSimpleContext({
   name: "Frecency",
   init: () => {

@@ -12,7 +12,10 @@ export function sessionPlanTrackerCommandOptions(sessionID: string): CommandOpti
         name: "plan",
       },
       onSelect: (dialog) => {
-        dialog.replace(<DialogPlan sessionID={sessionID} />)
+        dialog.replace(() => {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+          return <DialogPlan sessionID={sessionID} />
+        })
       },
     },
     {
@@ -24,7 +27,10 @@ export function sessionPlanTrackerCommandOptions(sessionID: string): CommandOpti
         aliases: ["tasks"],
       },
       onSelect: (dialog) => {
-        dialog.replace(<DialogTracker sessionID={sessionID} />)
+        dialog.replace(() => {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+          return <DialogTracker sessionID={sessionID} />
+        })
       },
     },
   ]

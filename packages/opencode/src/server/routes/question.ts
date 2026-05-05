@@ -60,7 +60,7 @@ export const QuestionRoutes = lazy(() =>
         const params = c.req.valid("param")
         const json = c.req.valid("json")
         Question.reply({
-          requestID: params.requestID,
+          requestID: String(params.requestID),
           answers: json.answers,
         })
         return c.json(true)
@@ -92,7 +92,7 @@ export const QuestionRoutes = lazy(() =>
       ),
       (c) => {
         const params = c.req.valid("param")
-        Question.reject(params.requestID)
+        Question.reject(String(params.requestID))
         return c.json(true)
       },
     ),

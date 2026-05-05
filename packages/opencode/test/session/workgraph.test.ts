@@ -305,8 +305,12 @@ describe("session workgraph", () => {
       async rerank(input) {
         return {
           candidates: input.candidates.map((candidate) => ({
-            ...candidate,
-            rerankScore: /oak lattice decomposition/i.test(candidate.content) ? 25 : 1,
+            score: candidate.score,
+            documentID: candidate.documentID ?? (candidate as { sourceID?: string }).sourceID,
+            chunkID: candidate.chunkID ?? (candidate as { sourceID?: string }).sourceID,
+            text: candidate.text ?? (candidate as { content?: string }).content,
+            metadata: candidate.metadata,
+            rerankScore: /oak lattice decomposition/i.test((candidate.text ?? (candidate as { content?: string }).content) ?? "") ? 25 : 1,
           })),
           metadata: { source: "test-reranker" },
         }
@@ -399,8 +403,12 @@ describe("session workgraph", () => {
         async rerank(input) {
           return {
             candidates: input.candidates.map((candidate) => ({
-              ...candidate,
-              rerankScore: /oak lattice decomposition/i.test(candidate.content) ? 20 : 1,
+              score: candidate.score,
+              documentID: candidate.documentID ?? (candidate as { sourceID?: string }).sourceID,
+              chunkID: candidate.chunkID ?? (candidate as { sourceID?: string }).sourceID,
+              text: candidate.text ?? (candidate as { content?: string }).content,
+              metadata: candidate.metadata,
+              rerankScore: /oak lattice decomposition/i.test((candidate.text ?? (candidate as { content?: string }).content) ?? "") ? 20 : 1,
             })),
             metadata: { source: "test-reranker" },
           }
@@ -528,7 +536,9 @@ describe("session workgraph", () => {
           return {
             candidates: input.candidates.map((candidate) => ({
               ...candidate,
-              rerankScore: /oak lattice recovery/i.test(candidate.content) ? 20 : 1,
+              rerankScore: /oak lattice recovery/i.test((candidate.text ?? (candidate as { content?: string }).content) ?? "") ? 20 : 1,
+              chunkID: candidate.chunkID ?? String(candidate.sourceID ?? ""),
+              documentID: candidate.documentID ?? String(candidate.sourceID ?? ""),
             })),
             metadata: { source: "test-reranker" },
           }
@@ -610,7 +620,9 @@ describe("session workgraph", () => {
           return {
             candidates: input.candidates.map((candidate) => ({
               ...candidate,
-              rerankScore: /oak lattice recovery/i.test(candidate.content) ? 20 : 1,
+              rerankScore: /oak lattice recovery/i.test((candidate.text ?? (candidate as { content?: string }).content) ?? "") ? 20 : 1,
+              chunkID: candidate.chunkID ?? String(candidate.sourceID ?? ""),
+              documentID: candidate.documentID ?? String(candidate.sourceID ?? ""),
             })),
             metadata: { source: "test-reranker" },
           }
@@ -699,7 +711,9 @@ describe("session workgraph", () => {
           return {
             candidates: input.candidates.map((candidate) => ({
               ...candidate,
-              rerankScore: /oak lattice recovery/i.test(candidate.content) ? 20 : 1,
+              rerankScore: /oak lattice recovery/i.test((candidate.text ?? (candidate as { content?: string }).content) ?? "") ? 20 : 1,
+              chunkID: candidate.chunkID ?? String(candidate.sourceID ?? ""),
+              documentID: candidate.documentID ?? String(candidate.sourceID ?? ""),
             })),
             metadata: { source: "test-reranker" },
           }
@@ -754,7 +768,7 @@ describe("session workgraph", () => {
               rootSessionID: root.id,
               projectID: Instance.project.id,
               preferredSessionIDs: [root.id, child.id],
-              currentSourceID: msg.id,
+              currentSourceID: msg.info.id,
               semanticQuery: "Keep the semantic search stable and reuse the same semantic answer.",
               semanticLimit: 2,
             })
@@ -794,7 +808,9 @@ describe("session workgraph", () => {
           return {
             candidates: input.candidates.map((candidate) => ({
               ...candidate,
-              rerankScore: /oak lattice recovery/i.test(candidate.content) ? 20 : 1,
+              rerankScore: /oak lattice recovery/i.test((candidate.text ?? (candidate as { content?: string }).content) ?? "") ? 20 : 1,
+              chunkID: candidate.chunkID ?? String(candidate.sourceID ?? ""),
+              documentID: candidate.documentID ?? String(candidate.sourceID ?? ""),
             })),
             metadata: { source: "test-reranker" },
           }
@@ -876,7 +892,9 @@ describe("session workgraph", () => {
           return {
             candidates: input.candidates.map((candidate) => ({
               ...candidate,
-              rerankScore: /oak lattice recovery/i.test(candidate.content) ? 20 : 1,
+              rerankScore: /oak lattice recovery/i.test((candidate.text ?? (candidate as { content?: string }).content) ?? "") ? 20 : 1,
+              chunkID: candidate.chunkID ?? String(candidate.sourceID ?? ""),
+              documentID: candidate.documentID ?? String(candidate.sourceID ?? ""),
             })),
             metadata: { source: "test-reranker" },
           }
@@ -1095,6 +1113,7 @@ test("workgraph semantic recall disables provider rerank on the fast path", asyn
       policy: { name: "auto" },
       candidates: [],
       runMetadata: {},
+      metadata: {},
     })
 
     try {
@@ -1313,11 +1332,13 @@ test("workgraph semantic recall disables provider rerank on the fast path", asyn
               sourceType: "session_message",
               content: "Test content for cache",
               score: 0.9,
+              chunkID: "src_1",
+              documentID: "src_1",
             },
           ],
           runID: "run_test_cache_cleanup",
           metadata: { source: "test" },
-        })
+        } as any)
 
         try {
           const m1 = await SessionWorkGraph.materialize({
@@ -1380,7 +1401,7 @@ test("workgraph semantic recall disables provider rerank on the fast path", asyn
           ],
           runID: "run_test_remove_cleanup",
           metadata: { source: "test" },
-        })
+        } as any)
 
         try {
           await SessionWorkGraph.materialize({
@@ -1457,7 +1478,7 @@ test("workgraph semantic recall disables provider rerank on the fast path", asyn
           ],
           runID: "run_cache_bound",
           metadata: { source: "test" },
-        })
+        } as any)
 
         try {
           await SessionWorkGraph.materialize({
@@ -1529,7 +1550,7 @@ test("workgraph semantic recall disables provider rerank on the fast path", asyn
           ],
           runID: "run_cache_ttl",
           metadata: { source: "test" },
-        })
+        } as any)
 
         try {
           await SessionWorkGraph.materialize({

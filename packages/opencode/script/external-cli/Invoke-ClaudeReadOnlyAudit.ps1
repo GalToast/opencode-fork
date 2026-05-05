@@ -5,11 +5,12 @@ param(
   [string] $Name = "claude-readonly-audit",
   [string] $WorkingDirectory = (Get-Location).Path,
   [int] $TimeoutSeconds = 120,
-  [string] $Tools = "Read,Glob,Grep,LS",
+  [string] $Tools = "Read,Bash",
   [string] $PermissionMode = "plan",
   [string] $OutputFormat = "text",
   [string] $Model = "",
   [string] $ClaudeExe = "",
+  [switch] $IncludePartialMessages,
   [switch] $NoBare
 )
 
@@ -105,7 +106,7 @@ $pidPath = Join-Path $runDir "pid.txt"
 $mcpConfigPath = Join-Path $runDir "empty-mcp-config.json"
 
 Copy-Item -LiteralPath $PromptPath -Destination $promptCopy
-Set-Content -LiteralPath $mcpConfigPath -Encoding UTF8 -Value '{"mcpServers":{}}'
+Set-Content -LiteralPath $mcpConfigPath -Encoding ASCII -Value '{"mcpServers":{}}'
 
 $claude = Resolve-ClaudeExe -Explicit $ClaudeExe
 $prompt = Get-Content -LiteralPath $PromptPath -Raw
@@ -125,6 +126,12 @@ $claudeArgs.Add("--permission-mode")
 $claudeArgs.Add($PermissionMode)
 $claudeArgs.Add("--output-format")
 $claudeArgs.Add($OutputFormat)
+if ($OutputFormat -eq "stream-json") {
+  $claudeArgs.Add("--verbose")
+}
+if ($IncludePartialMessages) {
+  $claudeArgs.Add("--include-partial-messages")
+}
 $claudeArgs.Add("--no-session-persistence")
 if ($Model) {
   $claudeArgs.Add("--model")

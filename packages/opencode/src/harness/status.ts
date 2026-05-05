@@ -125,11 +125,14 @@ export namespace HarnessStatus {
     const latestRetry = mostRecent(
       observations
         .filter((item) => item.kind === "patch.generation_retry")
-        .map((item) => ({
-          time: item.time,
-          proposalID: lower(item.data?.proposalID) ? item.data?.proposalID : undefined,
-          error: typeof item.data?.validationError === "string" ? item.data.validationError : undefined,
-        })),
+        .map((item) => {
+          const proposalID = item.data?.proposalID
+          return {
+            time: item.time,
+            proposalID: lower(proposalID) ? (proposalID as string) : undefined,
+            error: typeof item.data?.validationError === "string" ? item.data.validationError : undefined,
+          }
+        }),
     )
     const latestFailure = mostRecent(
       observations

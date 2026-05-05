@@ -70,6 +70,7 @@ interface FileMatch {
 }
 
 export namespace JitHydrator {
+  const CACHE_LIMIT = 20
   const sessionPagedHistory = Instance.state(() => new Map<string, Set<string>>())
   const sessionFileCache = Instance.state(() => new Map<string, Map<string, { content: string; hash: string; timestamp: number }>>())
 
@@ -449,6 +450,11 @@ export namespace JitHydrator {
       }
 
       sessionCache.set(filePath, { content: snippet, hash, timestamp: Date.now() })
+      while (sessionCache.size > CACHE_LIMIT) {
+        const oldest = [...sessionCache.entries()].sort((a, b) => a[1].timestamp - b[1].timestamp)[0]?.[0]
+        if (!oldest) break
+        sessionCache.delete(oldest)
+      }
       cache.set(sessionID, sessionCache)
 
       return snippet
@@ -463,7 +469,7 @@ export namespace JitHydrator {
       map.set(sessionID, new Set())
     }
     const history = map.get(sessionID)!
-    if (history.size > 20) {
+    if (history.size > CACHE_LIMIT) {
       const entries = [...history]
       const keep = entries.slice(entries.length >> 1)
       history.clear()
@@ -475,5 +481,16 @@ export namespace JitHydrator {
   export function clearSessionCache(sessionID: string): void {
     sessionPagedHistory().delete(sessionID)
     sessionFileCache().delete(sessionID)
+  }
+
+  export function cacheLimit() {
+    return CACHE_LIMIT
+  }
+
+  export function cacheStats(sessionID: string) {
+    return {
+      files: sessionFileCache().get(sessionID)?.size ?? 0,
+      history: sessionPagedHistory().get(sessionID)?.size ?? 0,
+    }
   }
 }

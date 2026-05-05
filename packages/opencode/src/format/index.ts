@@ -75,19 +75,52 @@ async function isEnabled(item: Formatter.Info) {
 
 async function getFormatter(ext: string) {
   const formatters = await state().then((x) => x.formatters)
-  const result = []
-  for (const item of Object.values(formatters)) {
+  const checks = Object.values(formatters).map(async (item) => {
     log.info("checking", { name: item.name, ext })
-    if (!item.extensions.includes(ext)) continue
-    if (!(await isEnabled(item))) continue
+    if (!item.extensions.includes(ext)) return
+    if (!(await isEnabled(item))) return
     log.info("enabled", { name: item.name, ext })
-    result.push(item)
+    return item
+  })
+  return (await Promise.all(checks)).filter((item) => item !== undefined)
+}
+
+async function file(file: string) {
+  log.info("formatting", { file })
+  const ext = path.extname(file)
+
+  for (const item of await getFormatter(ext)) {
+    log.info("running", { command: item.command })
+    try {
+      const proc = Process.spawn(
+        item.command.map((x) => x.replace("$FILE", file)),
+        {
+          cwd: Instance.directory,
+          env: { ...process.env, ...item.environment },
+          stdout: "ignore",
+          stderr: "ignore",
+        },
+      )
+      const exit = await proc.exited
+      if (exit !== 0)
+        log.error("failed", {
+          command: item.command,
+          ...item.environment,
+        })
+    } catch (error) {
+      log.error("failed to format file", {
+        error,
+        command: item.command,
+        ...item.environment,
+        file,
+      })
+    }
   }
-  return result
 }
 
 export const Format = {
   Status,
+  file,
   async status() {
     const s = await state()
     const result: StatusType[] = []
@@ -104,39 +137,7 @@ export const Format = {
   init() {
     log.info("init")
     Bus.subscribe(File.Event.Edited, (payload) => {
-      void (async () => {
-        const file = payload.properties.file
-        log.info("formatting", { file })
-        const ext = path.extname(file)
-
-        for (const item of await getFormatter(ext)) {
-          log.info("running", { command: item.command })
-          try {
-            const proc = Process.spawn(
-              item.command.map((x) => x.replace("$FILE", file)),
-              {
-                cwd: Instance.directory,
-                env: { ...process.env, ...item.environment },
-                stdout: "ignore",
-                stderr: "ignore",
-              },
-            )
-            const exit = await proc.exited
-            if (exit !== 0)
-              log.error("failed", {
-                command: item.command,
-                ...item.environment,
-              })
-          } catch (error) {
-            log.error("failed to format file", {
-              error,
-              command: item.command,
-              ...item.environment,
-              file,
-            })
-          }
-        }
-      })()
+      void file(payload.properties.file)
     })
   },
 }

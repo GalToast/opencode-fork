@@ -19,9 +19,11 @@ import type {
   CallHierarchyOutgoingCall,
   SymbolInformation,
 } from "vscode-languageserver-types"
+import { Effect, Layer, ServiceMap } from "effect"
 
 // eslint-disable-next-line @typescript-eslint/no-namespace -- legacy API is used across many imports in this repo
 export namespace LSP {
+  export class Service extends ServiceMap.Service<Service, Interface>()("@opencode/LSP") {}
   const log = Log.create({ service: "lsp" })
 
   export const Event = {
@@ -120,7 +122,7 @@ export namespace LSP {
           id: name,
           root: existing?.root ?? (() => Promise.resolve(Instance.directory)),
           extensions: item.extensions ?? existing?.extensions ?? [],
-          spawn: (root) => ({
+          spawn: async (root) => ({
             process: spawn(item.command[0], item.command.slice(1), {
               cwd: root,
               env: {
@@ -146,7 +148,7 @@ export namespace LSP {
         spawning: new Map<string, Promise<LSPClient.Info | undefined>>(),
       }
     },
-    (entry) => {
+    async (entry) => {
       for (const client of entry.clients) {
         void client.shutdown()
       }
@@ -300,7 +302,7 @@ export namespace LSP {
 
   export async function diagnostics() {
     const results: Record<string, LSPClient.Diagnostic[]> = {}
-    for (const clientDiagnostics of await runAll((client): Map<string, LSPClient.Diagnostic[]> => client.diagnostics)) {
+    for (const clientDiagnostics of await runAll((client) => Promise.resolve(client.diagnostics))) {
       const entries = Array.from(clientDiagnostics as Map<string, LSPClient.Diagnostic[]>)
       for (const [filePath, fileDiagnostics] of entries) {
         const arr = results[filePath] ?? []
@@ -346,8 +348,8 @@ export namespace LSP {
         })
         .then((result) =>
           result.filter((item): item is SymbolInformation => {
-            const kind = item?.kind
-            return Boolean(kind && kinds.includes(kind))
+            const kind = item?.kind as number
+            return Boolean(kind && kinds.includes(kind as typeof kinds[number]))
           }),
         )
         .then((result) => result.slice(0, 10))
@@ -485,4 +487,22 @@ export namespace LSP {
       return `${severity} [${line}:${col}] ${diagnostic.message}`
     },
   }
+
+  export interface Interface {
+    readonly touchFile: (input: string, waitForDiagnostics?: boolean) => Effect.Effect<void>
+    readonly documentSymbol: (uri: string) => Effect.Effect<(DocumentSymbol | Symbol)[]>
+  }
+
+  const layer = Layer.effect(
+    Service,
+    Effect.gen(function* () {
+      return Service.of({
+        touchFile: (input: string, waitForDiagnostics?: boolean) =>
+          Effect.promise(() => touchFile(input, waitForDiagnostics)),
+        documentSymbol: (uri: string) => Effect.promise(() => documentSymbol(uri)),
+      })
+    }),
+  )
+
+  export const defaultLayer = layer
 }

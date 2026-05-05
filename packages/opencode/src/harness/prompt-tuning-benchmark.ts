@@ -63,14 +63,14 @@ type ScenarioDefinition = {
   prompt: string
 }
 
-export const ALIBABA_CODING_PLAN_PROMPT_TUNING_MODELS = [
+export const ALIBABA_CODING_PLAN_PROMPT_TUNING_MODELS: string[] = [
   "glm-5",
   "qwen3.5-plus",
   "kimi-k2.5",
   "MiniMax-M2.5",
-] as const
+]
 
-export const FREE_OPENCODE_PROMPT_TUNING_MODELS = [
+export const FREE_OPENCODE_PROMPT_TUNING_MODELS: string[] = [
   "minimax-m2.5-free",
   "big-pickle",
   "mimo-v2-omni-free",
@@ -298,11 +298,11 @@ export function promptTuningModelPools() {
   return {
     alibabaCodingPlan: ALIBABA_CODING_PLAN_PROMPT_TUNING_MODELS.map((modelID) => ({
       providerID: "alibaba-coding-plan" as any,
-      modelID,
+      modelID: modelID as any,
     })),
     freeOpencode: FREE_OPENCODE_PROMPT_TUNING_MODELS.map((modelID) => ({
       providerID: "opencode" as any,
-      modelID,
+      modelID: modelID as any,
     })),
   } satisfies Record<string, SemanticBenchmarkModel[]>
 }

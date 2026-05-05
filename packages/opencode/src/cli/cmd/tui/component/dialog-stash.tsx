@@ -5,9 +5,10 @@ import { Locale } from "@/util/locale"
 import { useTheme } from "../context/theme"
 import { useKeybind, type KeybindKey } from "../context/keybind"
 import { usePromptStash, type StashEntry } from "./prompt/stash"
+import type { KeybindInfo } from "@/util/keybind"
 
 type KeybindContext = {
-  all: Partial<Record<KeybindKey, { 0?: unknown }[]>>
+  all: Partial<Record<KeybindKey, KeybindInfo[]>>
   print(key: KeybindKey): string
 }
 

@@ -1,7 +1,7 @@
 import { Slug } from "@opencode-ai/util/slug"
 import path from "path"
 import { BusEvent } from "@/bus/bus-event"
-import { Bus } from "@/bus"
+import { Bus, Service as BusService } from "@/bus"
 import { Decimal } from "decimal.js"
 import z from "zod"
 import { type ProviderMetadata } from "ai"
@@ -368,7 +368,7 @@ export namespace Session {
   const db = <T>(fn: (d: Parameters<typeof Database.use>[0] extends (trx: infer D) => any ? D : never) => T) =>
     Effect.sync(() => Database.use(fn))
 
-  export const layer: Layer.Layer<Service, never, Bus.Service | Config.Service> = Layer.effect(
+  export const layer: Layer.Layer<Service, never, BusService | Config.Service> = Layer.effect(
     Service,
     Effect.gen(function* () {
       const bus = yield* Bus.Service
@@ -388,7 +388,7 @@ export namespace Session {
           id: SessionID.descending(input.id),
           slug: Slug.create(),
           version: Installation.VERSION,
-          projectID: ctx.project.id,
+          projectID: ProjectID.make(ctx.project.id),
           directory: input.directory,
           workspaceID: input.workspaceID,
           parentID: input.parentID,
@@ -451,7 +451,7 @@ export namespace Session {
           d
             .select()
             .from(SessionTable)
-            .where(and(eq(SessionTable.project_id, ctx.project.id), eq(SessionTable.parent_id, parentID)))
+            .where(and(eq(SessionTable.project_id, ProjectID.make(ctx.project.id)), eq(SessionTable.parent_id, parentID)))
             .all(),
         )
         return rows.map(fromRow)
@@ -694,7 +694,13 @@ export namespace Session {
         workspaceID: WorkspaceID.zod.optional(),
       })
       .optional(),
-    (input) => runPromise((svc) => svc.create(input)),
+    async (input) => {
+      const result = await runPromise((svc) => svc.create(input))
+      const { HarnessBlackboard } = await import("../harness/blackboard")
+      const rootSessionID = input?.parentID ? HarnessBlackboard.getRootID(input.parentID) : result.id
+      HarnessBlackboard.registerSession(result.id, rootSessionID)
+      return result
+    },
   )
 
   export const fork = fn(z.object({ sessionID: SessionID.zod, messageID: MessageID.zod.optional() }), (input) =>
@@ -745,7 +751,7 @@ export namespace Session {
     limit?: number
   }) {
     const project = Instance.project
-    const conditions = [eq(SessionTable.project_id, project.id)]
+    const conditions = [eq(SessionTable.project_id, ProjectID.make(project.id))]
 
     if (input?.workspaceID) {
       conditions.push(eq(SessionTable.workspace_id, input.workspaceID))

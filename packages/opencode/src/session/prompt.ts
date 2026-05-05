@@ -16,7 +16,7 @@ import { Bus } from "../bus"
 import { ProviderTransform } from "../provider/transform"
 import { SystemPrompt } from "./system"
 import { Instruction } from "./instruction"
-import { Plugin } from "../plugin"
+import { Plugin, PluginService, defaultLayer as PluginDefaultLayer } from "../plugin"
 import PROMPT_PLAN from "../session/prompt/plan.txt"
 import BUILD_SWITCH from "../session/prompt/build-switch.txt"
 import MAX_STEPS from "../session/prompt/max-steps.txt"
@@ -132,7 +132,7 @@ export namespace SessionPrompt {
       const provider = yield* Provider.Service
       const processor = yield* SessionProcessor.Service
       const compaction = yield* SessionCompaction.Service
-      const plugin = yield* Plugin.Service
+      const plugin = yield* PluginService
       const commands = yield* Command.Service
       const permission = yield* Permission.Service
       const fsys = yield* AppFileSystem.Service
@@ -489,10 +489,12 @@ NOTE: At any point in time through this workflow you should feel free to ask the
               return Effect.runPromise(
                 Effect.gen(function* () {
                   const ctx = context(args, options)
-                  yield* plugin.trigger(
-                    "tool.execute.before",
-                    { tool: item.id, sessionID: ctx.sessionID, callID: ctx.callID },
-                    { args },
+                  yield* Effect.promise(() =>
+                    plugin.trigger(
+                      "tool.execute.before",
+                      { tool: item.id, sessionID: ctx.sessionID, callID: ctx.callID },
+                      { args },
+                    ),
                   )
                   const result = yield* Effect.promise(() => item.execute(args, ctx))
                   const output = {
@@ -504,10 +506,12 @@ NOTE: At any point in time through this workflow you should feel free to ask the
                       messageID: input.processor.message.id,
                     })),
                   }
-                  yield* plugin.trigger(
-                    "tool.execute.after",
-                    { tool: item.id, sessionID: ctx.sessionID, callID: ctx.callID, args },
-                    output,
+                  yield* Effect.promise(() =>
+                    plugin.trigger(
+                      "tool.execute.after",
+                      { tool: item.id, sessionID: ctx.sessionID, callID: ctx.callID, args },
+                      output,
+                    ),
                   )
                   return output
                 }),
@@ -527,19 +531,23 @@ NOTE: At any point in time through this workflow you should feel free to ask the
             Effect.runPromise(
               Effect.gen(function* () {
                 const ctx = context(args, opts)
-                yield* plugin.trigger(
-                  "tool.execute.before",
-                  { tool: key, sessionID: ctx.sessionID, callID: opts.toolCallId },
-                  { args },
+                yield* Effect.promise(() =>
+                  plugin.trigger(
+                    "tool.execute.before",
+                    { tool: key, sessionID: ctx.sessionID, callID: opts.toolCallId },
+                    { args },
+                  ),
                 )
                 yield* Effect.promise(() => ctx.ask({ permission: key, metadata: {}, patterns: ["*"], always: ["*"] }))
                 const result: Awaited<ReturnType<NonNullable<typeof execute>>> = yield* Effect.promise(() =>
                   execute(args, opts),
                 )
-                yield* plugin.trigger(
-                  "tool.execute.after",
-                  { tool: key, sessionID: ctx.sessionID, callID: opts.toolCallId, args },
-                  result,
+                yield* Effect.promise(() =>
+                  plugin.trigger(
+                    "tool.execute.after",
+                    { tool: key, sessionID: ctx.sessionID, callID: opts.toolCallId, args },
+                    result,
+                  ),
                 )
 
                 const textParts: string[] = []
@@ -644,7 +652,9 @@ NOTE: At any point in time through this workflow you should feel free to ask the
           subagent_type: task.agent,
           command: task.command,
         }
-        yield* plugin.trigger("tool.execute.before", { tool: "task", sessionID, callID: part.id }, { args: taskArgs })
+        yield* Effect.promise(() =>
+          plugin.trigger("tool.execute.before", { tool: "task", sessionID, callID: part.id }, { args: taskArgs }),
+        )
 
         const taskAgent = yield* agents.get(task.agent)
         if (!taskAgent) {
@@ -721,10 +731,12 @@ NOTE: At any point in time through this workflow you should feel free to ask the
           messageID: assistantMessage.id,
         }))
 
-        yield* plugin.trigger(
-          "tool.execute.after",
-          { tool: "task", sessionID, callID: part.id, args: taskArgs },
-          result,
+        yield* Effect.promise(() =>
+          plugin.trigger(
+            "tool.execute.after",
+            { tool: "task", sessionID, callID: part.id, args: taskArgs },
+            result,
+          ),
         )
 
         assistantMessage.finish = "tool-calls"
@@ -888,11 +900,13 @@ NOTE: At any point in time through this workflow you should feel free to ask the
 
         const args = (invocations[shellName] ?? invocations[""]).args
         const cwd = ctx.directory
-        const shellEnv = yield* plugin.trigger(
-          "shell.env",
-          { cwd, sessionID: input.sessionID, callID: part.callID },
-          { env: {} },
-        )
+        const shellEnv = (yield* Effect.promise(() =>
+          plugin.trigger(
+            "shell.env",
+            { cwd, sessionID: input.sessionID, callID: part.callID },
+            { env: {} },
+          ),
+        )) as { env: Record<string, string> }
 
         const cmd = ChildProcess.make(sh, args, {
           cwd,
@@ -1024,7 +1038,7 @@ NOTE: At any point in time through this workflow you should feel free to ask the
         }
 
         yield* Effect.addFinalizer(() =>
-          InstanceState.withALS(() => instruction.clear(info.id)).pipe(Effect.flatMap((x) => x)),
+          InstanceState.withALS(() => instruction.clear(info.id)),
         )
 
         type Draft<T> = T extends MessageV2.Part ? Omit<T, "id"> & { id?: string } : never
@@ -1329,8 +1343,8 @@ NOTE: At any point in time through this workflow you should feel free to ask the
 
         yield* sessions.updateMessage(info)
         for (const part of parts) yield* sessions.updatePart(part)
-        yield* plugin
-          .trigger(
+        yield* Effect.promise(() =>
+          plugin.trigger(
             "chat.message",
             {
               sessionID: input.sessionID,
@@ -1340,8 +1354,8 @@ NOTE: At any point in time through this workflow you should feel free to ask the
               variant: input.variant,
             },
             { message: info, parts },
-          )
-          .pipe(Effect.timeoutOption("2 seconds"), Effect.ignore, Effect.forkIn(scope))
+          ),
+        ).pipe(Effect.timeoutOption("2 seconds"), Effect.ignore, Effect.forkIn(scope))
 
         return { info, parts }
       }, Effect.scoped)
@@ -1472,9 +1486,9 @@ NOTE: At any point in time through this workflow you should feel free to ask the
           }
           if (latest) return latest
           throw new Error("Impossible")
-        })
+        }).pipe(Effect.orDie)
 
-      const runLoop: (sessionID: SessionID) => Effect.Effect<MessageV2.WithParts> = Effect.fn("SessionPrompt.run")(
+      const runLoopEffect = Effect.fn("SessionPrompt.run")(
         function* (sessionID: SessionID) {
           const ctx = yield* InstanceState.context
           let structured: unknown | undefined
@@ -1670,13 +1684,15 @@ NOTE: At any point in time through this workflow you should feel free to ask the
                   }
                 }
 
-                yield* plugin.trigger("experimental.chat.messages.transform", {}, { messages: msgs })
+                yield* Effect.promise(() =>
+                  plugin.trigger("experimental.chat.messages.transform", {}, { messages: msgs }),
+                ).pipe(Effect.orDie)
 
                 const [skills, env, instructions, modelMsgs] = yield* Effect.all([
-                  Effect.promise(() => SystemPrompt.skills(agent)),
-                  Effect.promise(() => SystemPrompt.environment(model)),
+                  Effect.promise(() => SystemPrompt.skills(agent)).pipe(Effect.orDie),
+                  Effect.promise(() => SystemPrompt.environment(model)).pipe(Effect.orDie),
                   instruction.system().pipe(Effect.orDie),
-                  Effect.promise(() => MessageV2.toModelMessages(msgs, model)),
+                  Effect.promise(() => MessageV2.toModelMessages(msgs, model)).pipe(Effect.orDie),
                 ])
                 const system = [...env, ...(skills ? [skills] : []), ...instructions]
                 const format = lastUser.format ?? { type: "text" as const }
@@ -1743,7 +1759,7 @@ NOTE: At any point in time through this workflow you should feel free to ask the
               }),
               Effect.fnUntraced(function* (exit) {
                 if (Exit.isFailure(exit) && Cause.hasInterruptsOnly(exit.cause)) yield* handle.abort()
-                yield* InstanceState.withALS(() => instruction.clear(handle.message.id)).pipe(Effect.flatMap((x) => x))
+                yield* InstanceState.withALS(() => instruction.clear(handle.message.id))
               }),
             )
             if (outcome === "break") break
@@ -1751,9 +1767,11 @@ NOTE: At any point in time through this workflow you should feel free to ask the
           }
 
           yield* compaction.prune({ sessionID }).pipe(Effect.ignore, Effect.forkIn(scope))
-          return yield* lastAssistant(sessionID)
+          return yield* lastAssistant(sessionID).pipe(Effect.orDie)
         },
       )
+      const runLoop: (sessionID: SessionID) => Effect.Effect<MessageV2.WithParts> = (sessionID) =>
+        runLoopEffect(sessionID).pipe(Effect.catch(Effect.die))
 
       const loop: (input: z.infer<typeof LoopInput>) => Effect.Effect<MessageV2.WithParts> = Effect.fn(
         "SessionPrompt.loop",
@@ -1863,10 +1881,12 @@ NOTE: At any point in time through this workflow you should feel free to ask the
             : yield* lastModel(input.sessionID)
           : taskModel
 
-        yield* plugin.trigger(
-          "command.execute.before",
-          { command: input.command, sessionID: input.sessionID, arguments: input.arguments },
-          { parts },
+        yield* Effect.promise(() =>
+          plugin.trigger(
+            "command.execute.before",
+            { command: input.command, sessionID: input.sessionID, arguments: input.arguments },
+            { parts },
+          ),
         )
 
         const result = yield* prompt({
@@ -1914,7 +1934,7 @@ NOTE: At any point in time through this workflow you should feel free to ask the
         Layer.provide(Provider.defaultLayer),
         Layer.provide(Instruction.defaultLayer),
         Layer.provide(AppFileSystem.defaultLayer),
-        Layer.provide(Plugin.defaultLayer),
+        Layer.provide(PluginDefaultLayer),
         Layer.provide(Session.defaultLayer),
         Layer.provide(Agent.defaultLayer),
         Layer.provide(Bus.layer),

@@ -7,7 +7,7 @@ import { Rpc } from "@/util/rpc"
 import { upgrade } from "@/cli/upgrade"
 import { Config } from "@/config/config"
 import { GlobalBus } from "@/bus/global"
-import { createOpencodeClient, type Event } from "@opencode-ai/sdk/v2"
+import { createOpencodeClient } from "@opencode-ai/sdk/v2"
 import type { BunWebSocketData } from "hono/bun"
 import { Flag } from "@/flag/flag"
 
@@ -148,7 +148,7 @@ export const rpc = {
     })
   },
   async reload() {
-    Config.global.reset()
+    await Config.invalidate()
     await Instance.disposeAll()
   },
   async shutdown() {
@@ -159,7 +159,7 @@ export const rpc = {
   },
 }
 
-Rpc.listen(rpc)
+Rpc.listen(rpc as unknown as { [method: string]: (input: unknown) => unknown })
 
 function getAuthorizationHeader(): string | undefined {
   const password = Flag.OPENCODE_SERVER_PASSWORD

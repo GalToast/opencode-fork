@@ -14,7 +14,9 @@ const log = Log.create({ service: "tui.config" })
 
 const Info = TuiInfo
 
-export type TuiConfigInfo = z.output<typeof Info>
+export type TuiConfigInfo = z.output<typeof Info> & {
+  plugin_origins?: Config.PluginOrigin[]
+}
 
 function mergeInfo(target: TuiConfigInfo, source: TuiConfigInfo): TuiConfigInfo {
   return mergeDeep(target, source)
@@ -114,4 +116,12 @@ async function load(text: string, configFilepath: string): Promise<TuiConfigInfo
 export const TuiConfig = {
   Info,
   get,
+  waitForDependencies: Config.waitForDependencies,
+  pluginSpecifier: Config.pluginSpecifier,
+} as const
+
+// Namespace for accessing type info from runtime
+export namespace TuiConfig {
+  export type Info = TuiConfigInfo
+  export type PluginOrigin = Config.PluginOrigin
 }

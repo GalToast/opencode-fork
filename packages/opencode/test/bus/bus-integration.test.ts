@@ -6,6 +6,7 @@ import { Instance } from "../../src/project/instance"
 import { tmpdir } from "../fixture/fixture"
 
 const TestEvent = BusEvent.define("test.integration", z.object({ value: z.number() }))
+type AnyBusPayload = { type: string; properties: unknown }
 
 function withInstance(directory: string, fn: () => Promise<void>) {
   return Instance.provide({ directory, fn })
@@ -46,7 +47,8 @@ describe("Bus integration: acquireRelease subscriber pattern", () => {
 
     await withInstance(tmp.path, async () => {
       Bus.subscribeAll((evt) => {
-        received.push({ type: evt.type, value: evt.properties.value })
+        const event = evt as AnyBusPayload
+        received.push({ type: event.type, value: (event.properties as { value?: number }).value })
       })
       await Bun.sleep(10)
       await Bus.publish(TestEvent, { value: 10 })
@@ -67,11 +69,12 @@ describe("Bus integration: acquireRelease subscriber pattern", () => {
 
     await withInstance(tmp.path, async () => {
       Bus.subscribeAll((evt) => {
-        if (evt.type === Bus.InstanceDisposed.type) {
+        const event = evt as AnyBusPayload
+        if (event.type === Bus.InstanceDisposed.type) {
           disposed = true
           return
         }
-        received.push(evt.properties.value)
+        received.push((event.properties as { value: number }).value)
       })
       await Bun.sleep(10)
       await Bus.publish(TestEvent, { value: 1 })

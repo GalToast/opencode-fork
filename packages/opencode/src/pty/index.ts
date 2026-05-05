@@ -89,7 +89,7 @@ interface ActiveSession {
 
 const state = Instance.state(
   () => new Map<string, ActiveSession>(),
-  (sessions) => {
+  async (sessions) => {
     for (const session of sessions.values()) {
       try {
         session.process.kill()

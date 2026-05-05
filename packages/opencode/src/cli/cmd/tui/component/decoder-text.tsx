@@ -1,7 +1,6 @@
 import { createSignal, createEffect, onCleanup } from "solid-js"
 import { useTheme } from "../context/theme"
 import type { RGBA } from "@opentui/core"
-import { TextAttributes } from "@opentui/core"
 
 const CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%" // Cyber Hex Chars
 
@@ -22,10 +21,9 @@ export function DecodeText(props: {
   createEffect(() => {
     // Reset when text changes
     setAnimating(true)
-    let timeout: ReturnType<typeof setTimeout>
-    let interval: ReturnType<typeof setInterval>
-    
-    timeout = setTimeout(() => {
+    let interval: ReturnType<typeof setInterval> | undefined
+
+    const timeout = setTimeout(() => {
       let iteration = 0
       const target = props.text
       const len = target.length
@@ -55,7 +53,7 @@ export function DecodeText(props: {
 
     onCleanup(() => {
       clearTimeout(timeout)
-      clearInterval(interval)
+      if (interval) clearInterval(interval)
     })
   })
 

@@ -72,7 +72,7 @@ export namespace ModelsDev {
   export const Provider = z.object({
     api: z.string().optional(),
     name: z.string(),
-    env: z.array(z.string()),
+    env: z.array(z.string()).readonly(),
     id: z.string(),
     npm: z.string().optional(),
     models: z.record(z.string(), Model),
@@ -91,7 +91,7 @@ export namespace ModelsDev {
       await Filesystem.readJson<ModelDatabase>(Flag.OPENCODE_MODELS_PATH ?? filepath).catch(() => undefined)
     if (result) return result
     const snapshot = await import("./models-snapshot")
-      .then((m) => m.snapshot as ModelDatabase)
+      .then((m) => m.snapshot as unknown as ModelDatabase)
       .catch(() => undefined)
     if (snapshot) return snapshot
     if (Flag.OPENCODE_DISABLE_MODELS_FETCH) return {}

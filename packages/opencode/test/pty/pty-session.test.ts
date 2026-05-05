@@ -30,9 +30,9 @@ describe("pty", () => {
       fn: async () => {
         const log: Array<{ type: "created" | "exited" | "deleted"; id: PtyID }> = []
         const off = [
-          Bus.subscribe(Pty.Event.Created, (evt) => log.push({ type: "created", id: evt.properties.info.id })),
-          Bus.subscribe(Pty.Event.Exited, (evt) => log.push({ type: "exited", id: evt.properties.id })),
-          Bus.subscribe(Pty.Event.Deleted, (evt) => log.push({ type: "deleted", id: evt.properties.id })),
+          Bus.subscribe(Pty.Event.Created, (evt) => log.push({ type: "created", id: evt.properties.info.id as PtyID })),
+          Bus.subscribe(Pty.Event.Exited, (evt) => log.push({ type: "exited", id: evt.properties.id as PtyID })),
+          Bus.subscribe(Pty.Event.Deleted, (evt) => log.push({ type: "deleted", id: evt.properties.id as PtyID })),
         ]
 
         let id: PtyID | undefined
@@ -42,16 +42,16 @@ describe("pty", () => {
             args: ["sh", "-c", "sleep 0.1"],
             title: "sleep",
           })
-          id = info.id
+          id = info.id as PtyID
 
           await wait(() => pick(log, id!).includes("exited"))
 
-          await Pty.remove(id)
+          await Pty.remove(id as string)
           await wait(() => pick(log, id!).length >= 3)
           expect(pick(log, id!)).toEqual(["created", "exited", "deleted"])
         } finally {
           off.forEach((x) => x())
-          if (id) await Pty.remove(id)
+          if (id) await Pty.remove(id as string)
         }
       },
     })
@@ -67,24 +67,24 @@ describe("pty", () => {
       fn: async () => {
         const log: Array<{ type: "created" | "exited" | "deleted"; id: PtyID }> = []
         const off = [
-          Bus.subscribe(Pty.Event.Created, (evt) => log.push({ type: "created", id: evt.properties.info.id })),
-          Bus.subscribe(Pty.Event.Exited, (evt) => log.push({ type: "exited", id: evt.properties.id })),
-          Bus.subscribe(Pty.Event.Deleted, (evt) => log.push({ type: "deleted", id: evt.properties.id })),
+          Bus.subscribe(Pty.Event.Created, (evt) => log.push({ type: "created", id: evt.properties.info.id as PtyID })),
+          Bus.subscribe(Pty.Event.Exited, (evt) => log.push({ type: "exited", id: evt.properties.id as PtyID })),
+          Bus.subscribe(Pty.Event.Deleted, (evt) => log.push({ type: "deleted", id: evt.properties.id as PtyID })),
         ]
 
         let id: PtyID | undefined
         try {
           const info = await Pty.create({ command: "/bin/sh", title: "sh" })
-          id = info.id
+          id = info.id as PtyID
 
           await sleep(100)
 
-          await Pty.remove(id)
+          await Pty.remove(id as string)
           await wait(() => pick(log, id!).length >= 3)
           expect(pick(log, id!)).toEqual(["created", "exited", "deleted"])
         } finally {
           off.forEach((x) => x())
-          if (id) await Pty.remove(id)
+          if (id) await Pty.remove(id as string)
         }
       },
     })

@@ -2,13 +2,12 @@ import { useDialog } from "@tui/ui/dialog"
 import { DialogSelect } from "@tui/ui/dialog-select"
 import { useRoute } from "@tui/context/route"
 import { useSync } from "@tui/context/sync"
-import { createMemo, createSignal, createResource, onMount, Show } from "solid-js"
+import { createMemo, createSignal, createResource, onMount } from "solid-js"
 import { Locale } from "@/util/locale"
 import { useKeybind } from "../../context/keybind"
 import { useTheme } from "../../context/theme"
 import { useSDK } from "../../context/sdk"
 import { DialogSessionRename } from "../dialog-session-rename"
-import { useKV } from "../../context/kv"
 import { createDebouncedSignal } from "../../util/signal"
 import { Spinner } from "../spinner"
 import { useToast } from "../../ui/toast"
@@ -20,7 +19,6 @@ export function DialogSessionList(props: { workspaceID?: string; localOnly?: boo
   const keybind = useKeybind()
   const { theme } = useTheme()
   const sdk = useSDK()
-  const kv = useKV()
   const toast = useToast()
   const [toDelete, setToDelete] = createSignal<string>()
   const [search, setSearch] = createDebouncedSignal("", 150)
@@ -79,6 +77,7 @@ export function DialogSessionList(props: { workspaceID?: string; localOnly?: boo
           value: x.id,
           category,
           footer: Locale.time(x.time.updated),
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           gutter: isWorking ? <Spinner /> : undefined,
         }
       })
@@ -88,6 +87,7 @@ export function DialogSessionList(props: { workspaceID?: string; localOnly?: boo
     dialog.setSize("large")
   })
 
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
   return (
     <DialogSelect
       title={props.workspaceID ? `Workspace Sessions` : props.localOnly ? "Local Sessions" : "Sessions"}
@@ -109,40 +109,47 @@ export function DialogSessionList(props: { workspaceID?: string; localOnly?: boo
         {
           keybind: keybind.all.session_delete?.[0],
           title: "delete",
-          onTrigger: async (option) => {
-            if (toDelete() === option.value) {
-              const deleted = await sdk.client.session
-                .delete({
-                  sessionID: option.value,
-                })
-                .then(() => true)
-                .catch(() => false)
-              setToDelete(undefined)
-              if (!deleted) {
-                toast.show({
-                  message: "Failed to delete session",
-                  variant: "error",
-                })
+          onTrigger: (option) => {
+            void (async () => {
+              if (toDelete() === option.value) {
+                const deleted = await sdk.client.session
+                  .delete({
+                    sessionID: option.value,
+                  })
+                  .then(() => true)
+                  .catch(() => false)
+                setToDelete(undefined)
+                if (!deleted) {
+                  toast.show({
+                    message: "Failed to delete session",
+                    variant: "error",
+                  })
+                  return
+                }
+                if (props.workspaceID) {
+                  listedActions.mutate((existingSessions) =>
+                    existingSessions?.filter((session) => session.id !== option.value),
+                  )
+                  return
+                }
+                sync.set(
+                  "session",
+                  sync.data.session.filter((session) => session.id !== option.value),
+                )
                 return
               }
-              if (props.workspaceID) {
-                listedActions.mutate((sessions) => sessions?.filter((session) => session.id !== option.value))
-                return
-              }
-              sync.set(
-                "session",
-                sync.data.session.filter((session) => session.id !== option.value),
-              )
-              return
-            }
-            setToDelete(option.value)
+              setToDelete(option.value)
+            })()
           },
         },
         {
           keybind: keybind.all.session_rename?.[0],
           title: "rename",
-          onTrigger: async (option) => {
-            dialog.replace(() => <DialogSessionRename session={option.value} />)
+          onTrigger: (option) => {
+            dialog.replace(() => {
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+              return <DialogSessionRename session={option.value} />
+            })
           },
         },
       ]}

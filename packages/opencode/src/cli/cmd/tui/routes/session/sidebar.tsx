@@ -14,6 +14,7 @@ export function Sidebar(props: { sessionID: string; overlay?: boolean }) {
   const session = createMemo(() => sync.session.get(props.sessionID))
   const scrollAcceleration = createMemo(() => getScrollAcceleration(tuiConfig))
 
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
   return (
     <Show when={session()}>
       <box

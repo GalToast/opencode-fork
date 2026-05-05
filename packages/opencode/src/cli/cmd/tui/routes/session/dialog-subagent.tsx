@@ -4,6 +4,7 @@ import { useRoute } from "@tui/context/route"
 export function DialogSubagent(props: { sessionID: string }) {
   const route = useRoute()
 
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
   return (
     <DialogSelect
       title="Subagent Actions"
@@ -13,7 +14,7 @@ export function DialogSubagent(props: { sessionID: string }) {
           value: "subagent.view",
           description: "the subagent's session",
           onSelect: (dialog) => {
-            ;(route as any).navigate({
+            route.navigate({
               type: "session",
               sessionID: props.sessionID,
             })

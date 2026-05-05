@@ -48,10 +48,9 @@ const PROVIDER_PRIORITY: Record<string, number> = {
   google: 5,
 }
 
-export function createDialogProviderOptions(dialog: ReturnType<typeof useDialog>) {
+export function createDialogProviderOptions(dialog?: ReturnType<typeof useDialog>) {
   const sync = useSync() as unknown as SyncProviderContext
   const sdk = useSDK() as unknown as SDKClientContext
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const client: OpencodeClient = sdk.client
   const options = createMemo<DialogSelectOption<string>[]>(() => {
     return pipe(
@@ -75,7 +74,7 @@ export function createDialogProviderOptions(dialog: ReturnType<typeof useDialog>
             },
           ]
           let index: number | null = 0
-          if (methods.length > 1) {
+          if (methods.length > 1 && dialog) {
             index = await new Promise<number | null>((resolve) => {
               dialog.replace(
                 <DialogSelect
@@ -98,14 +97,14 @@ export function createDialogProviderOptions(dialog: ReturnType<typeof useDialog>
               method: index,
             })
             const data = result.data
-            if (data?.method === "code") {
+            if (data?.method === "code" && dialog) {
               dialog.replace(<CodeMethod providerID={provider.id} title={method.label} index={index} authorization={data} /> as JSX.Element)
             }
-            if (data?.method === "auto") {
+            if (data?.method === "auto" && dialog) {
               dialog.replace(<AutoMethod providerID={provider.id} title={method.label} index={index} authorization={data} /> as JSX.Element)
             }
           }
-          if (method.type === "api") {
+          if (method.type === "api" && dialog) {
             return dialog.replace(<ApiMethod providerID={provider.id} title={method.label} /> as JSX.Element)
           }
         },
@@ -134,7 +133,6 @@ function AutoMethod(props: AutoMethodProps) {
   const dialog = useDialog()
   const sync = useSync() as unknown as SyncProviderContext
   const toast = useToast()
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const client: OpencodeClient = sdk.client
 
   useKeyboard((evt) => {
@@ -158,7 +156,10 @@ function AutoMethod(props: AutoMethodProps) {
       }
       await client.instance.dispose()
       await sync.bootstrap()
-      dialog.replace(() => <DialogModel providerID={props.providerID} />)
+      dialog.replace(() => {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+        return <DialogModel providerID={props.providerID} />
+      })
     })()
   })
 
@@ -197,7 +198,6 @@ function CodeMethod(props: CodeMethodProps) {
   const sync = useSync() as unknown as SyncProviderContext
   const dialog = useDialog()
   const [error, setError] = createSignal(false)
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const client: OpencodeClient = sdk.client
 
   // eslint-disable-next-line @typescript-eslint/no-unsafe-return
@@ -211,12 +211,15 @@ function CodeMethod(props: CodeMethodProps) {
           method: props.index,
           code: value,
         })
-      if (!hasError) {
-        await client.instance.dispose()
-        await sync.bootstrap()
-        dialog.replace(() => <DialogModel providerID={props.providerID} />)
-        return
-      }
+        if (!hasError) {
+          await client.instance.dispose()
+          await sync.bootstrap()
+          dialog.replace(() => {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+            return <DialogModel providerID={props.providerID} />
+          })
+          return
+        }
       setError(true)
       }}
       description={() => {
@@ -244,7 +247,6 @@ function ApiMethod(props: ApiMethodProps) {
   const sdk = useSDK() as unknown as SDKClientContext
   const sync = useSync() as unknown as SyncProviderContext
   const { theme } = useTheme()
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const client: OpencodeClient = sdk.client
 
   function renderProviderDescription() {
@@ -299,7 +301,10 @@ function ApiMethod(props: ApiMethodProps) {
         })
         await client.instance.dispose()
         await sync.bootstrap()
-        dialog.replace(() => <DialogModel providerID={props.providerID} />)
+        dialog.replace(() => {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+          return <DialogModel providerID={props.providerID} />
+        })
       }}
     />
   )

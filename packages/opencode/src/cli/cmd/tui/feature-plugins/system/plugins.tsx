@@ -12,9 +12,11 @@ const tab = Keybind.parse("tab").at(0)
 
 function state(api: TuiPluginApi, item: TuiPluginStatus) {
   if (!item.enabled) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return <span style={{ fg: api.theme.current.textMuted }}>disabled</span>
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
   return (
     <span style={{ fg: item.active ? api.theme.current.success : api.theme.current.error }}>
       {item.active ? "active" : "inactive"}
@@ -49,6 +51,7 @@ function Install(props: { api: TuiPluginApi }) {
     setGlobal((x) => !x)
   })
 
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
   return (
     <props.api.ui.DialogPrompt
       title="Install plugin"
@@ -56,6 +59,7 @@ function Install(props: { api: TuiPluginApi }) {
       busy={busy()}
       busyText="Installing plugin..."
       description={() => (
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
         <box flexDirection="row" gap={1}>
           <text fg={props.api.theme.current.textMuted}>scope:</text>
           <text fg={busy() ? props.api.theme.current.textMuted : props.api.theme.current.text}>
@@ -78,7 +82,7 @@ function Install(props: { api: TuiPluginApi }) {
         }
 
         setBusy(true)
-        props.api.plugins
+        void props.api.plugins
           .install(mod, { global: global() })
           .then((out) => {
             if (!out.ok) {
@@ -143,12 +147,14 @@ function row(api: TuiPluginApi, item: TuiPluginStatus, width: number): DialogSel
     value: item.id,
     category: item.source === "internal" ? "Internal" : "External",
     description: meta(item, width),
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     footer: state(api, item),
     disabled: item.id === id,
   }
 }
 
 function showInstall(api: TuiPluginApi) {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
   api.ui.dialog.replace(() => <Install api={api} />)
 }
 
@@ -187,8 +193,7 @@ function View(props: { api: TuiPluginApi }) {
     const item = list().find((entry) => entry.id === x)
     if (!item) return
     setLock(true)
-    const task = item.active ? props.api.plugins.deactivate(x) : props.api.plugins.activate(x)
-    task
+    void (item.active ? props.api.plugins.deactivate(x) : props.api.plugins.activate(x))
       .then((ok) => {
         if (!ok) {
           props.api.ui.toast({
@@ -203,6 +208,7 @@ function View(props: { api: TuiPluginApi }) {
       })
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
   return (
     <DialogSelect
       title="Plugins"
@@ -237,6 +243,7 @@ function View(props: { api: TuiPluginApi }) {
 }
 
 function show(api: TuiPluginApi) {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
   api.ui.dialog.replace(() => <View api={api} />)
 }
 
@@ -260,6 +267,7 @@ const tui: TuiPlugin = async (api) => {
       },
     },
   ])
+  await Promise.resolve()
 }
 
 const plugin: TuiPluginModule & { id: string } = {

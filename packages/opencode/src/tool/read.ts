@@ -1,5 +1,5 @@
 import z from "zod"
-import { Effect, Scope } from "effect"
+import { Effect, Layer, ManagedRuntime } from "effect"
 import { createReadStream } from "fs"
 import { open } from "fs/promises"
 import * as path from "path"
@@ -25,14 +25,13 @@ const parameters = z.object({
   limit: z.coerce.number().describe("The maximum number of lines to read (defaults to 2000)").optional(),
 })
 
-export const ReadTool = Tool.defineEffect(
+const ReadToolEffect = Tool.defineEffect(
   "read",
   Effect.gen(function* () {
     const fs = yield* AppFileSystem.Service
     const instruction = yield* Instruction.Service
     const lsp = yield* LSP.Service
     const time = yield* FileTime.Service
-    const scope = yield* Scope.Scope
 
     const miss = Effect.fn("ReadTool.miss")(function* (filepath: string) {
       const dir = path.dirname(filepath)
@@ -78,7 +77,7 @@ export const ReadTool = Tool.defineEffect(
     })
 
     const warm = Effect.fn("ReadTool.warm")(function* (filepath: string, sessionID: Tool.Context["sessionID"]) {
-      yield* lsp.touchFile(filepath, false).pipe(Effect.ignore, Effect.forkIn(scope))
+      yield* lsp.touchFile(filepath, false).pipe(Effect.ignore)
       yield* time.read(sessionID, filepath)
     })
 
@@ -226,6 +225,38 @@ export const ReadTool = Tool.defineEffect(
     }
   }),
 )
+
+const ReadToolLegacyLayer = Layer.mergeAll(
+  AppFileSystem.defaultLayer,
+  FileTime.defaultLayer,
+  Instruction.defaultLayer,
+  LSP.defaultLayer,
+)
+
+function initReadTool(ctx?: Tool.InitContext) {
+  return ReadToolEffect.pipe(
+    Effect.flatMap((info) => Effect.promise(() => info.init(ctx))),
+    Effect.provide(ReadToolLegacyLayer),
+  )
+}
+
+export const ReadTool = Object.assign(ReadToolEffect, {
+  init: async (ctx?: Tool.InitContext) => {
+    const runtime = ManagedRuntime.make(ReadToolLegacyLayer)
+    const info = await runtime.runPromise(initReadTool(ctx))
+    return {
+      ...info,
+      execute: (args: z.infer<typeof parameters>, toolCtx: Tool.Context) =>
+        runtime.runPromise(
+          initReadTool(ctx).pipe(
+            Effect.flatMap((fresh) => Effect.promise(() => fresh.execute(args, toolCtx))),
+          ),
+        ),
+    }
+  },
+}) as typeof ReadToolEffect & {
+  init: Tool.Info<typeof parameters>["init"]
+}
 
 async function lines(filepath: string, opts: { limit: number; offset: number }) {
   const stream = createReadStream(filepath, { encoding: "utf8" })

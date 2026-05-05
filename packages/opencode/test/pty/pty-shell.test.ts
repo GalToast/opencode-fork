@@ -31,11 +31,7 @@ describe("pty shell args", () => {
     )
   }
 
-  const bash = (() => {
-    const shell = Shell.preferred()
-    if (Shell.name(shell) === "bash") return shell
-    return Shell.gitbash()
-  })()
+  const bash = Shell.preferred()
   if (bash) {
     test(
       "adds login args to bash",

@@ -58,8 +58,9 @@ export function DialogForkFromTimeline(props: { sessionID: string; onMove: (mess
         (x) => isTimelineTextPart(x) && !x.synthetic && !x.ignored,
       )
       if (!part) continue
+      const textPart = part as TextPart & { synthetic?: boolean; ignored?: boolean }
       result.push({
-        title: String(part.text).replace(/\n/g, " "),
+        title: String(textPart.text).replace(/\n/g, " "),
         value: message.id,
         footer: Locale.time(message.time.created),
         onSelect: (dialogState) => {

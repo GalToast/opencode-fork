@@ -7,6 +7,7 @@ import { RetrievalService } from "@/retrieval"
 import { SessionWorkGraph } from "@/session/workgraph"
 import { SessionWorldState } from "@/session/world-state"
 import { MessageID } from "@/session/schema"
+import { ModelID, ProviderID } from "@/provider/schema"
 const benchmarkTasks = new Map<string, Record<string, unknown>>()
 const TaskTool = {
   init: async () => ({
@@ -148,8 +149,8 @@ function benchmarkSessionID(label: string) {
 }
 
 export type SemanticBenchmarkModel = {
-  providerID: string
-  modelID: string
+  providerID: ProviderID
+  modelID: ModelID
 }
 
 export type SemanticLiftScenarioResult = {
@@ -212,8 +213,8 @@ type PromptMock = (...args: any[]) => any
 type CancelMock = (...args: any[]) => any
 
 const defaultBenchmarkModel: SemanticBenchmarkModel = {
-  providerID: "alibaba-coding-plan" as any,
-  modelID: "glm-5" as any,
+  providerID: ProviderID.make("alibaba-coding-plan"),
+  modelID: ModelID.make("glm-5"),
 }
 
 const basePlanCtx = {

@@ -21,7 +21,7 @@ const _typeCheck: _AssertAgentImplementsACPAgent = true
  */
 describe("acp.agent interface compliance", () => {
   // Extract method names from the ACPAgent interface type
-  type ACPAgentMethods = keyof ACPAgent
+  type ACPAgentMethods = keyof typeof ACP.Agent.prototype
 
   // Methods that the SDK's router explicitly checks for at runtime
   const sdkCheckedMethods: ACPAgentMethods[] = [

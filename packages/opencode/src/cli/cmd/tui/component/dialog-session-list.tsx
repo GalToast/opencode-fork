@@ -2,22 +2,28 @@ import { useDialog } from "@tui/ui/dialog"
 import { DialogSelect } from "@tui/ui/dialog-select"
 import { useRoute } from "@tui/context/route"
 import { useSync } from "@tui/context/sync"
-import { createMemo, createSignal, createResource, onMount, Show, type JSX } from "solid-js"
+import { createMemo, createSignal, createResource, onMount } from "solid-js"
 import { Locale } from "@/util/locale"
 import { useKeybind } from "../context/keybind"
 import { useTheme } from "../context/theme"
 import { useSDK } from "../context/sdk"
 import { DialogSessionRename } from "./dialog-session-rename"
-import { useKV } from "../context/kv"
 import { createDebouncedSignal } from "../util/signal"
 import { Spinner } from "./spinner"
 import type { OpencodeClient } from "@opencode-ai/sdk/v2"
-import { Session as SessionApi } from "@/session"
 import type { KeybindInfo } from "@/util/keybind"
 import type { Route } from "@tui/context/route"
 import { buildSessionListSearchQuery, sortRootSessions } from "../util/session-list"
 
-type SessionRow = SessionApi.Info
+type SessionRow = {
+  id: string
+  parentID?: string
+  time: {
+    created: number
+    updated: number
+  }
+  title: string
+}
 type RouteContext = {
   data: Route
   navigate(route: Route): void
@@ -43,15 +49,11 @@ export function DialogSessionList() {
   const keybind = useKeybind() as KeybindContext
   const { theme } = useTheme()
   const sdk = useSDK() as SDKContext
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const client: OpencodeClient = sdk.client
-  const kv = useKV()
   const navigate = (next: Route) => {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     route.navigate(next)
   }
   const listSessions = async (query: string) => {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const result = await client.session.list(buildSessionListSearchQuery(query))
     return result.data ?? []
   }
@@ -73,7 +75,7 @@ export function DialogSessionList() {
 
   const options = createMemo(() => {
     const today = new Date().toDateString()
-    return sortRootSessions(sessions())
+    return sortRootSessions<SessionRow>(sessions())
       .map((x) => {
         const date = new Date(x.time.updated)
         let category = date.toDateString()
@@ -138,7 +140,10 @@ export function DialogSessionList() {
           keybind: keybind.all.session_rename?.[0],
           title: "rename",
           onTrigger: (option) => {
-            dialog.replace(() => <DialogSessionRename session={option.value} />)
+            dialog.replace(() => {
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+              return <DialogSessionRename session={option.value} />
+            })
           },
         },
       ]}

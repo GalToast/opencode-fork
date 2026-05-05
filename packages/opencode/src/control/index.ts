@@ -1,9 +1,10 @@
 import { eq, and } from "drizzle-orm"
 import { Database } from "@/storage/db"
-import { ControlAccountTable } from "./control.sql"
+import { ControlAccountTable } from "@/storage/schema"
+import { AccessToken, RefreshToken } from "@/account/schema"
 import z from "zod"
 
-export * from "./control.sql"
+export * from "@/storage/schema"
 
 const AccountSchema = z.object({
   email: z.string(),
@@ -54,8 +55,8 @@ async function token(): Promise<string | undefined> {
     db
       .update(ControlAccountTable)
       .set({
-        access_token: json.access_token,
-        refresh_token: json.refresh_token ?? row.refresh_token,
+        access_token: AccessToken.make(json.access_token),
+        refresh_token: json.refresh_token ? RefreshToken.make(json.refresh_token) : row.refresh_token,
         token_expiry: json.expires_in ? Date.now() + json.expires_in * 1000 : undefined,
       })
       .where(and(eq(ControlAccountTable.email, row.email), eq(ControlAccountTable.url, row.url)))

@@ -4,7 +4,7 @@ import { z } from "zod"
 import { Lock } from "@/util/lock"
 import { Global } from "@/global"
 
-const RuntimeRegistryEntry = z.object({
+const RuntimeRegistryEntrySchema = z.object({
   runtimeID: z.string(),
   pid: z.number().int().positive(),
   ppid: z.number().int().nonnegative(),
@@ -16,10 +16,10 @@ const RuntimeRegistryEntry = z.object({
 
 const RuntimeRegistrySnapshot = z.object({
   version: z.literal(1),
-  entries: z.array(RuntimeRegistryEntry),
+  entries: z.array(RuntimeRegistryEntrySchema),
 })
 
-type RuntimeRegistryEntry = z.infer<typeof RuntimeRegistryEntry>
+type RuntimeRegistryEntry = z.infer<typeof RuntimeRegistryEntrySchema>
 
 function registryPath() {
   return process.env.OPENCODE_RUNTIME_REGISTRY || path.join(Global.Path.state, "tui-runtime-registry.json")

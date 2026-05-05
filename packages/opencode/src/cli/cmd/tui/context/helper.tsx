@@ -1,4 +1,4 @@
-import { createContext, Show, useContext, type ParentProps } from "solid-js"
+import { createContext, Show, useContext, type JSX, type ParentProps } from "solid-js"
 import { Log } from "@/util/log"
 import { appendFileSync } from "fs"
 
@@ -10,14 +10,14 @@ export function createSimpleContext<T>(input: {
   name: string
   init: () => T
 }): {
-  provider: (props: ParentProps) => any
+  provider: (props: ParentProps) => JSX.Element
   use: () => T
 }
 export function createSimpleContext<Props extends object, T>(input: {
   name: string
   init: (input: Props) => T
 }): {
-  provider: (props: ParentProps<Props>) => any
+  provider: (props: ParentProps<Props>) => JSX.Element
   use: () => T
 }
 export function createSimpleContext<Props extends object, T>(input: {

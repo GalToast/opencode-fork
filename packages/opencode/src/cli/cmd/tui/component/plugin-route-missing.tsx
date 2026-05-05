@@ -3,6 +3,7 @@ import { useTheme } from "../context/theme"
 export function PluginRouteMissing(props: { id: string; onHome: () => void }) {
   const { theme } = useTheme()
 
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
   return (
     <box width="100%" height="100%" alignItems="center" justifyContent="center" flexDirection="column" gap={1}>
       <text fg={theme.warning}>Unknown plugin route: {props.id}</text>

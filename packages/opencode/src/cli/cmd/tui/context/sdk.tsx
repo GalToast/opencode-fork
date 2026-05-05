@@ -9,6 +9,52 @@ export type EventSource = {
   on: (handler: (event: Event) => void) => () => void
 }
 
+type MessagePartDeltaEvent = Extract<Event, { type: "message.part.delta" }>
+
+function canMergeDelta(left: Event, right: MessagePartDeltaEvent): left is MessagePartDeltaEvent {
+  if (left.type !== "message.part.delta") return false
+  return (
+    left.properties.messageID === right.properties.messageID &&
+    left.properties.partID === right.properties.partID &&
+    left.properties.field === right.properties.field
+  )
+}
+
+export function coalesceQueuedEvents(events: Event[]): Event[] {
+  const result: Event[] = []
+
+  for (const event of events) {
+    if (event.type !== "message.part.delta") {
+      result.push(event)
+      continue
+    }
+
+    const previous = result.at(-1)
+    if (!previous || !canMergeDelta(previous, event)) {
+      result.push(event)
+      continue
+    }
+
+    result[result.length - 1] = {
+      ...previous,
+      properties: {
+        ...previous.properties,
+        delta: `${previous.properties.delta}${event.properties.delta}`,
+      },
+    }
+  }
+
+  return result
+}
+
+// SDK context exposes these additional properties for plugin/api use
+export type SDKContextExtras = {
+  fetch?: typeof fetch
+  directory?: string
+  workspaceID?: string
+  setWorkspace: (workspaceID: string | undefined) => void
+}
+
 export const { use: useSDK, provider: SDKProvider } = createSimpleContext({
   name: "SDK",
   init: (props: {
@@ -27,6 +73,12 @@ export const { use: useSDK, provider: SDKProvider } = createSimpleContext({
       headers: props.headers,
     })
 
+    // Workspace management
+    let currentWorkspaceID: string | undefined = undefined
+    const setWorkspace = (workspaceID: string | undefined) => {
+      currentWorkspaceID = workspaceID
+    }
+
     const emitter = createGlobalEmitter<{
       [key in Event["type"]]: Extract<Event, { type: key }>
     }>()
@@ -37,7 +89,7 @@ export const { use: useSDK, provider: SDKProvider } = createSimpleContext({
 
     const flush = () => {
       if (queue.length === 0) return
-      const events = queue
+      const events = coalesceQueuedEvents(queue)
       queue = []
       timer = undefined
       last = Date.now()
@@ -134,7 +186,16 @@ export const { use: useSDK, provider: SDKProvider } = createSimpleContext({
       if (timer) clearTimeout(timer)
     })
 
-    return { client: sdk, event: emitter, url: props.url }
+    return {
+      client: sdk,
+      event: emitter,
+      url: props.url,
+      // Expose extras for plugin/api use
+      fetch: props.fetch,
+      directory: props.directory,
+      workspaceID: currentWorkspaceID,
+      setWorkspace,
+    }
   },
 })
 

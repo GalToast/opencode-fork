@@ -112,7 +112,7 @@ describe("SyncEvent", () => {
         }> = []
         const received = new Promise<void>((resolve) => {
           Bus.subscribeAll((event) => {
-            events.push(event)
+            events.push(event as { type: string; properties: { id: string; name: string } })
             resolve()
           })
         })

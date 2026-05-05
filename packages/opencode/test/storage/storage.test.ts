@@ -1,8 +1,6 @@
 import { describe, expect, test } from "bun:test"
 import fs from "fs/promises"
 import path from "path"
-import { Effect, Layer, ManagedRuntime } from "effect"
-import { AppFileSystem } from "../../src/filesystem"
 import { Global } from "../../src/global"
 import { Storage } from "../../src/storage/storage"
 import { tmpdir } from "../fixture/fixture"
@@ -15,43 +13,6 @@ async function withScope<T>(fn: (root: string[]) => Promise<T>) {
     return await fn(root)
   } finally {
     await fs.rm(path.join(dir, ...root), { recursive: true, force: true })
-  }
-}
-
-function map(root: string, file: string) {
-  if (file === Global.Path.data) return root
-  if (file.startsWith(Global.Path.data + path.sep)) return path.join(root, path.relative(Global.Path.data, file))
-  return file
-}
-
-function layer(root: string) {
-  return Layer.effect(
-    AppFileSystem.Service,
-    Effect.gen(function* () {
-      const fs = yield* AppFileSystem.Service
-      return AppFileSystem.Service.of({
-        ...fs,
-        isDir: (file) => fs.isDir(map(root, file)),
-        readJson: (file) => fs.readJson(map(root, file)),
-        writeWithDirs: (file, content, mode) => fs.writeWithDirs(map(root, file), content, mode),
-        readFileString: (file) => fs.readFileString(map(root, file)),
-        remove: (file) => fs.remove(map(root, file)),
-        glob: (pattern, options) =>
-          fs.glob(pattern, options?.cwd ? { ...options, cwd: map(root, options.cwd) } : options),
-      })
-    }),
-  ).pipe(Layer.provide(AppFileSystem.defaultLayer))
-}
-
-async function withStorage<T>(
-  root: string,
-  fn: (run: <A, E>(body: Effect.Effect<A, E, Storage.Service>) => Promise<A>) => Promise<T>,
-) {
-  const rt = ManagedRuntime.make(Storage.layer.pipe(Layer.provide(layer(root))))
-  try {
-    return await fn((body) => rt.runPromise(body))
-  } finally {
-    await rt.dispose()
   }
 }
 
@@ -80,7 +41,8 @@ describe("Storage", () => {
 
       await Storage.write(key, value)
 
-      expect(await Storage.read<typeof value>(key)).toEqual(value)
+      const result = await Storage.read<typeof value>(key)
+      expect(result).toEqual(value)
     })
   })
 
@@ -93,7 +55,7 @@ describe("Storage", () => {
   test("update on missing key throws NotFoundError", async () => {
     await withScope(async (root) => {
       await expect(
-        Storage.update<{ value: number }>([...root, "missing", "key"], (draft) => {
+        Storage.update([...root, "missing", "key"], (draft: { value: number }) => {
           draft.value += 1
         }),
       ).rejects.toMatchObject({ name: "NotFoundError" })
@@ -103,10 +65,11 @@ describe("Storage", () => {
   test("write overwrites existing value", async () => {
     await withScope(async (root) => {
       const key = [...root, "overwrite", "test"]
-      await Storage.write<{ v: number }>(key, { v: 1 })
-      await Storage.write<{ v: number }>(key, { v: 2 })
+      await Storage.write(key, { v: 1 })
+      await Storage.write(key, { v: 2 })
 
-      expect(await Storage.read<{ v: number }>(key)).toEqual({ v: 2 })
+      const result = await Storage.read<{ v: number }>(key)
+      expect(result).toEqual({ v: 2 })
     })
   })
 
@@ -129,13 +92,14 @@ describe("Storage", () => {
 
       await Promise.all(
         Array.from({ length: 25 }, () =>
-          Storage.update<{ value: number }>(key, (draft) => {
+          Storage.update(key, (draft: { value: number }) => {
             draft.value += 1
           }),
         ),
       )
 
-      expect(await Storage.read<{ value: number }>(key)).toEqual({ value: 25 })
+      const result = await Storage.read<{ value: number }>(key)
+      expect(result).toEqual({ value: 25 })
     })
   })
 
@@ -154,9 +118,10 @@ describe("Storage", () => {
   test("nested keys create deep paths", async () => {
     await withScope(async (root) => {
       const key = [...root, "a", "b", "c", "deep"]
-      await Storage.write<{ nested: boolean }>(key, { nested: true })
+      await Storage.write(key, { nested: true })
 
-      expect(await Storage.read<{ nested: boolean }>(key)).toEqual({ nested: true })
+      const result = await Storage.read<{ nested: boolean }>(key)
+      expect(result).toEqual({ nested: true })
       expect(await Storage.list([...root, "a"])).toEqual([key])
     })
   })
@@ -195,36 +160,28 @@ describe("Storage", () => {
       summary: { diffs },
     })
 
-    await withStorage(tmp.path, async (run) => {
-      expect(await run(Storage.Service.use((svc) => svc.list(["session_diff"])))).toEqual([
-        ["session_diff", "ses_test"],
-      ])
-      expect(await run(Storage.Service.use((svc) => svc.read<typeof diffs>(["session_diff", "ses_test"])))).toEqual(
-        diffs,
-      )
-      expect(
-        await run(
-          Storage.Service.use((svc) =>
-            svc.read<{
-              id: string
-              projectID: string
-              title: string
-              summary: {
-                additions: number
-                deletions: number
-              }
-            }>(["session", "proj_test", "ses_test"]),
-          ),
-        ),
-      ).toEqual({
-        id: "ses_test",
-        projectID: "proj_test",
-        title: "legacy",
+    expect(await Storage.list(["session_diff"])).toEqual([
+      ["session_diff", "ses_test"],
+    ])
+    expect(await Storage.read<typeof diffs>(["session_diff", "ses_test"])).toEqual(diffs)
+    expect(
+      await Storage.read<{
+        id: string
+        projectID: string
+        title: string
         summary: {
-          additions: 5,
-          deletions: 5,
-        },
-      })
+          additions: number
+          deletions: number
+        }
+      }>(["session", "proj_test", "ses_test"]),
+    ).toEqual({
+      id: "ses_test",
+      projectID: "proj_test",
+      title: "legacy",
+      summary: {
+        additions: 5,
+        deletions: 5,
+      },
     })
 
     expect(await Bun.file(path.join(storage, "migration")).text()).toBe("2")
@@ -248,32 +205,24 @@ describe("Storage", () => {
       text: "hello",
     })
 
-    await withStorage(tmp.path, async (run) => {
-      const projects = await run(Storage.Service.use((svc) => svc.list(["project"])))
-      expect(projects).toHaveLength(1)
-      const project = projects[0]![1]
+    const projects = await Storage.list(["project"])
+    expect(projects).toHaveLength(1)
+    const project = projects[0]![1]
 
-      expect(await run(Storage.Service.use((svc) => svc.list(["session", project])))).toEqual([
-        ["session", project, "ses_legacy"],
-      ])
-      expect(
-        await run(
-          Storage.Service.use((svc) => svc.read<{ id: string; title: string }>(["session", project, "ses_legacy"])),
-        ),
-      ).toEqual({
-        id: "ses_legacy",
-        title: "legacy",
-      })
-      expect(
-        await run(
-          Storage.Service.use((svc) =>
-            svc.read<{ role: string; text: string }>(["message", "ses_legacy", "msg_legacy"]),
-          ),
-        ),
-      ).toEqual({
-        role: "user",
-        text: "hello",
-      })
+    expect(await Storage.list(["session", project])).toEqual([
+      ["session", project, "ses_legacy"],
+    ])
+    expect(
+      await Storage.read<{ id: string; title: string }>(["session", project, "ses_legacy"]),
+    ).toEqual({
+      id: "ses_legacy",
+      title: "legacy",
+    })
+    expect(
+      await Storage.read<{ role: string; text: string }>(["message", "ses_legacy", "msg_legacy"]),
+    ).toEqual({
+      role: "user",
+      text: "hello",
     })
 
     expect(await Bun.file(path.join(storage, "migration")).text()).toBe("2")
@@ -286,9 +235,7 @@ describe("Storage", () => {
 
     await text(path.join(legacy, "storage", "session", "message", "probe", "0.json"), "{")
 
-    await withStorage(tmp.path, async (run) => {
-      expect(await run(Storage.Service.use((svc) => svc.list(["project"])))).toEqual([])
-    })
+    expect(await Storage.list(["project"])).toEqual([])
 
     expect(await exists(path.join(storage, "migration"))).toBe(false)
   })

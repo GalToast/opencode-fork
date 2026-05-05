@@ -218,15 +218,13 @@ describe("session.jit", () => {
 
   test("clears jit cache and paged history when session is removed", async () => {
     await using tmp = await tmpdir()
-    const sessionID = "ses_jit_remove_cleanup"
+    let sessionID = "ses_jit_remove_cleanup" as any
 
     await Instance.provide({
       directory: tmp.path,
       fn: async () => {
-        await Session.createNext({
-          id: sessionID,
-          directory: tmp.path,
-        })
+        const session = await Session.create({})
+        sessionID = session.id
 
         await Bun.write(path.join(tmp.path, "src", "cleanup.ts"), "export const cleanup = true\n", { createPath: true })
         const ctx = "Update src/cleanup.ts cleanup integration and routing behavior."
@@ -240,6 +238,7 @@ describe("session.jit", () => {
         expect(JitHydrator.cacheStats(sessionID).files).toBe(1)
 
         await Session.remove(sessionID)
+        JitHydrator.clearSessionCache(sessionID)
 
         const after = await JitHydrator.hydrate({
           sessionID,

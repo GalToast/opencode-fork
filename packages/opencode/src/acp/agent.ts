@@ -497,7 +497,6 @@ export namespace ACP {
                 sessionId,
                 update: {
                   sessionUpdate: "agent_message_chunk",
-                  messageId: props.messageID,
                   content: {
                     type: "text",
                     text: props.delta,
@@ -516,7 +515,6 @@ export namespace ACP {
                 sessionId,
                 update: {
                   sessionUpdate: "agent_thought_chunk",
-                  messageId: props.messageID,
                   content: {
                     type: "text",
                     text: props.delta,
@@ -578,12 +576,10 @@ export namespace ACP {
       }
     }
 
-    async authenticate(params: AuthenticateRequest) {
+    async authenticate(params: AuthenticateRequest): Promise<void | { _meta?: Record<string, unknown> }> {
       log.info("authenticate", { method: params.methodId })
       if (params.methodId === "opencode-login") {
-        return {
-          authenticated: true,
-        }
+        return { _meta: { authenticated: true } }
       }
       throw new Error(`Authentication method ${params.methodId} not supported`)
     }
@@ -991,7 +987,6 @@ export namespace ACP {
                 sessionId,
                 update: {
                   sessionUpdate: message.info.role === "user" ? "user_message_chunk" : "agent_message_chunk",
-                  messageId: message.info.id,
                   content: {
                     type: "text",
                     text: part.text,
@@ -1023,7 +1018,6 @@ export namespace ACP {
                 sessionId,
                 update: {
                   sessionUpdate: messageChunk,
-                  messageId: message.info.id,
                   content: { type: "resource_link", uri: url, name: filename, mimeType: mime },
                 },
               })
@@ -1045,7 +1039,6 @@ export namespace ACP {
                   sessionId,
                   update: {
                     sessionUpdate: messageChunk,
-                    messageId: message.info.id,
                     content: {
                       type: "image",
                       mimeType: effectiveMime,
@@ -1074,7 +1067,6 @@ export namespace ACP {
                   sessionId,
                   update: {
                     sessionUpdate: messageChunk,
-                    messageId: message.info.id,
                     content: { type: "resource", resource },
                   },
                 })
@@ -1091,7 +1083,6 @@ export namespace ACP {
                 sessionId,
                 update: {
                   sessionUpdate: "agent_thought_chunk",
-                  messageId: message.info.id,
                   content: {
                     type: "text",
                     text: part.text,

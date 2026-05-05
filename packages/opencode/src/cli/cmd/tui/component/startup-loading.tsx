@@ -51,6 +51,7 @@ export function StartupLoading(props: { ready: () => boolean }) {
     if (hold) clearTimeout(hold)
   })
 
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
   return (
     <Show when={show()}>
       <box position="absolute" zIndex={5000} left={0} right={0} bottom={1} justifyContent="center" alignItems="center">

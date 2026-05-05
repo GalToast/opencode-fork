@@ -1,16 +1,16 @@
 import {
-  type LanguageModelV3Prompt,
-  type SharedV3ProviderOptions,
+  type LanguageModelV2Prompt,
+  type SharedV2ProviderOptions,
   UnsupportedFunctionalityError,
 } from "@ai-sdk/provider"
 import type { OpenAICompatibleChatPrompt } from "./openai-compatible-api-types"
 import { convertToBase64 } from "@ai-sdk/provider-utils"
 
-function getOpenAIMetadata(message: { providerOptions?: SharedV3ProviderOptions }) {
+function getOpenAIMetadata(message: { providerOptions?: SharedV2ProviderOptions }) {
   return message?.providerOptions?.copilot ?? {}
 }
 
-export function convertToOpenAICompatibleChatMessages(prompt: LanguageModelV3Prompt): OpenAICompatibleChatPrompt {
+export function convertToOpenAICompatibleChatMessages(prompt: LanguageModelV2Prompt): OpenAICompatibleChatPrompt {
   const messages: OpenAICompatibleChatPrompt = []
   for (const { role, content, ...message } of prompt) {
     const metadata = getOpenAIMetadata({ ...message })
@@ -18,7 +18,7 @@ export function convertToOpenAICompatibleChatMessages(prompt: LanguageModelV3Pro
       case "system": {
         messages.push({
           role: "system",
-          content: content,
+          content: content as string,
           ...metadata,
         })
         break
@@ -36,14 +36,14 @@ export function convertToOpenAICompatibleChatMessages(prompt: LanguageModelV3Pro
 
         messages.push({
           role: "user",
-          content: content.map((part) => {
+          content: content.map((part: { type: string; text?: string; data?: unknown; mediaType?: string; providerOptions?: SharedV2ProviderOptions }) => {
             const partMetadata = getOpenAIMetadata(part)
             switch (part.type) {
               case "text": {
-                return { type: "text", text: part.text, ...partMetadata }
+                return { type: "text", text: part.text!, ...partMetadata }
               }
               case "file": {
-                if (part.mediaType.startsWith("image/")) {
+                if (part.mediaType?.startsWith("image/")) {
                   const mediaType = part.mediaType === "image/*" ? "image/jpeg" : part.mediaType
 
                   return {
@@ -52,7 +52,7 @@ export function convertToOpenAICompatibleChatMessages(prompt: LanguageModelV3Pro
                       url:
                         part.data instanceof URL
                           ? part.data.toString()
-                          : `data:${mediaType};base64,${convertToBase64(part.data)}`,
+                          : `data:${mediaType};base64,${convertToBase64(part.data as Uint8Array)}`,
                     },
                     ...partMetadata,
                   }
@@ -62,6 +62,10 @@ export function convertToOpenAICompatibleChatMessages(prompt: LanguageModelV3Pro
                   })
                 }
               }
+              default:
+                throw new UnsupportedFunctionalityError({
+                  functionality: `content part type ${part.type}`,
+                })
             }
           }),
           ...metadata,
@@ -83,7 +87,7 @@ export function convertToOpenAICompatibleChatMessages(prompt: LanguageModelV3Pro
         for (const part of content) {
           const partMetadata = getOpenAIMetadata(part)
           // Check for reasoningOpaque on any part (may be attached to text/tool-call)
-          const partOpaque = (part.providerOptions as { copilot?: { reasoningOpaque?: string } })?.copilot
+          const partOpaque = (part.providerOptions as { copilot?: { reasoningOpaque?: string } } | undefined)?.copilot
             ?.reasoningOpaque
           if (partOpaque && !reasoningOpaque) {
             reasoningOpaque = partOpaque
@@ -127,9 +131,6 @@ export function convertToOpenAICompatibleChatMessages(prompt: LanguageModelV3Pro
 
       case "tool": {
         for (const toolResponse of content) {
-          if (toolResponse.type === "tool-approval-response") {
-            continue
-          }
           const output = toolResponse.output
 
           let contentValue: string
@@ -137,9 +138,6 @@ export function convertToOpenAICompatibleChatMessages(prompt: LanguageModelV3Pro
             case "text":
             case "error-text":
               contentValue = output.value
-              break
-            case "execution-denied":
-              contentValue = output.reason ?? "Tool execution denied."
               break
             case "content":
             case "json":

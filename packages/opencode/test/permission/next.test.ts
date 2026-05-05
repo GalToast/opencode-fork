@@ -989,8 +989,8 @@ test("reply - resolves pending request even from sibling instance context", asyn
     directory: one.path,
     fn: () =>
       PermissionNext.ask({
-        id: PermissionID.make("per_cross_context"),
-        sessionID: SessionID.make("session_cross_context"),
+        id: PermissionID.make("per_cross_context") as unknown as string,
+        sessionID: SessionID.make("session_cross_context") as unknown as string,
         permission: "external_directory",
         patterns: ["C:/Users/HP/.codex/memories-cross-context/MEMORY.md"],
         metadata: {},
@@ -1007,7 +1007,7 @@ test("reply - resolves pending request even from sibling instance context", asyn
 
   await Instance.provide({
     directory: two.path,
-    fn: () => PermissionNext.reply({ requestID: onePending[0].id, reply: "always" }),
+    fn: () => PermissionNext.reply({ requestID: onePending[0].id as unknown as string, reply: "always" }),
   })
 
   await expect(ask).resolves.toBeUndefined()
@@ -1016,7 +1016,7 @@ test("reply - resolves pending request even from sibling instance context", asyn
     fn: async () => {
       expect(PermissionNext.list()).toHaveLength(0)
       const result = await PermissionNext.ask({
-        id: PermissionID.make("per_cross_context_second"),
+        id: PermissionID.make("per_cross_context_second") as unknown as string,
         sessionID: SessionID.make("session_cross_context"),
         permission: "external_directory",
         patterns: ["C:/Users/HP/.codex/memories-cross-context/index.md"],
@@ -1038,7 +1038,11 @@ test("reply - sibling instance publishes replied event to original request insta
     directory: one.path,
     fn: async () => {
       Bus.subscribe(PermissionNext.Event.Replied, (event) => {
-        seen = event.properties
+        seen = {
+          requestID: event.properties.requestID as string,
+          sessionID: event.properties.sessionID as string,
+          reply: event.properties.reply,
+        }
       })
     },
   })
@@ -1047,8 +1051,8 @@ test("reply - sibling instance publishes replied event to original request insta
     directory: one.path,
     fn: () =>
       PermissionNext.ask({
-        id: PermissionID.make("per_cross_context_event"),
-        sessionID: SessionID.make("session_cross_context_event"),
+        id: PermissionID.make("per_cross_context_event") as unknown as string,
+        sessionID: SessionID.make("session_cross_context_event") as unknown as string,
         permission: "external_directory",
         patterns: ["C:/Users/HP/.codex/memories-cross-context-event/MEMORY.md"],
         metadata: {},
@@ -1064,14 +1068,14 @@ test("reply - sibling instance publishes replied event to original request insta
 
   await Instance.provide({
     directory: two.path,
-    fn: () => PermissionNext.reply({ requestID: onePending[0].id, reply: "once" }),
+    fn: () => PermissionNext.reply({ requestID: onePending[0].id as unknown as string, reply: "once" }),
   })
 
   await expect(ask).resolves.toBeUndefined()
   await Bun.sleep(0)
   expect(seen).toEqual({
-    requestID: PermissionID.make("per_cross_context_event"),
-    sessionID: SessionID.make("session_cross_context_event"),
+    requestID: PermissionID.make("per_cross_context_event") as unknown as string,
+    sessionID: SessionID.make("session_cross_context_event") as unknown as string,
     reply: "once",
   })
 })
@@ -1084,8 +1088,8 @@ test("route reply - generated SDK resolves pending request through TUI-style fet
     directory: one.path,
     fn: () =>
       PermissionNext.ask({
-        id: PermissionID.make("per_route_cross_context"),
-        sessionID: SessionID.make("session_route_cross_context"),
+        id: PermissionID.make("per_route_cross_context") as unknown as string,
+        sessionID: SessionID.make("session_route_cross_context") as unknown as string,
         permission: "external_directory",
         patterns: ["C:/Users/HP/.codex/memories-route-cross-context/MEMORY.md"],
         metadata: {},

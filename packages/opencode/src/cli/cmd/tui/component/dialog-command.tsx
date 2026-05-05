@@ -151,9 +151,11 @@ function init() {
     register(cb: () => CommandOption[]) {
       const results = createMemo(cb)
       setRegistrations((arr) => [results, ...arr])
-      onCleanup(() => {
+      const cleanup = () => {
         setRegistrations((arr) => arr.filter((x) => x !== results))
-      })
+      }
+      onCleanup(cleanup)
+      return cleanup
     },
   }
   return result

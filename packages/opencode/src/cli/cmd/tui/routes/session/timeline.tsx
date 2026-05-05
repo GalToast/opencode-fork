@@ -27,7 +27,7 @@ export function SessionTimeline(props: { sessionID: string; onJump: (messageID: 
         ceremonyDetail?: string
         ceremonyRoleLabel?: string
         ceremony: boolean
-      },
+      }
     > = []
 
     for (const message of msgs) {
@@ -112,10 +112,10 @@ export function SessionTimeline(props: { sessionID: string; onJump: (messageID: 
                   if (renderer.getSelection()?.getSelectedText()) return
                   props.onJump(turn.messageID)
                 }}
-                onMouseOver={(event) => {
+                onMouseOver={(event: { currentTarget: unknown }) => {
                   setTimelineHoverBackground(event.currentTarget, turn.ceremony ? theme.backgroundMenu : theme.backgroundElement)
                 }}
-                onMouseOut={(event) => {
+                onMouseOut={(event: { currentTarget: unknown }) => {
                   setTimelineHoverBackground(event.currentTarget, turn.ceremony ? theme.backgroundElement : theme.backgroundPanel)
                 }}
                 paddingLeft={2}

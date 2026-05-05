@@ -106,7 +106,7 @@ export function DialogPlan(props: { sessionID: string }) {
         description: preview.planPath + (preview.hint ? ` — ${preview.hint}` : ""),
         onSelect: () => {
           void (async () => {
-            await Clipboard.copy(preview.planPath!)
+            await Clipboard.copy(preview.planPath)
             toast.show({ variant: "success", message: "Copied plan path" })
             dialog.clear()
           })()
@@ -149,9 +149,9 @@ export function DialogPlan(props: { sessionID: string }) {
           <box paddingTop={1} flexDirection="row" gap={1}>
             <text fg={theme.textMuted}>Workgraph:</text>
             <text fg={theme.textMuted}>
-              {workgraph()!.objectiveCount} obj
-              {workgraph()!.activeObjectiveCount > 0 ? ` (${workgraph()!.activeObjectiveCount} active)` : ""}
-              , {workgraph()!.laneCount} lane{workgraph()!.laneCount !== 1 ? "s" : ""}
+              {workgraph().objectiveCount} obj
+              {workgraph().activeObjectiveCount > 0 ? ` (${workgraph().activeObjectiveCount} active)` : ""}
+              , {workgraph().laneCount} lane{workgraph().laneCount !== 1 ? "s" : ""}
             </text>
           </box>
         </Show>

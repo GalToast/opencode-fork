@@ -12,10 +12,10 @@ const FileSearchCommand = cmd({
       type: "string",
       demandOption: true,
       description: "Search query",
-    }),
+  }),
   async handler(args) {
-    await bootstrap(process.cwd(), () => {
-      const results = File.search({ query: args.query })
+    await bootstrap(process.cwd(), async () => {
+      const results = await File.search({ query: args.query })
       process.stdout.write(results.join(EOL) + EOL)
     })
   },

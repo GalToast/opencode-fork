@@ -384,10 +384,12 @@ export namespace Agent {
                 if (part.type === "error") throw part.error
               }
               return result.object
-            })
+            }).pipe(Effect.flatMap((x) => Effect.succeed(x)))
           }
 
-          return yield* Effect.promise(() => generateObject(params).then((r) => r.object))
+          return yield* Effect.promise(() => generateObject(params).then((r) => r.object)).pipe(
+            Effect.flatMap((x) => Effect.succeed(x)),
+          )
         }),
       })
     }),
@@ -400,7 +402,7 @@ export namespace Agent {
     Layer.provide(Skill.defaultLayer),
   )
 
-  const { runPromise } = makeRuntime(Service, defaultLayer)
+  const { runPromise } = makeRuntime(Service, defaultLayer as Layer.Layer<Service, never>)
 
   export async function get(agent: string) {
     return runPromise((svc) => svc.get(agent))

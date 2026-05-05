@@ -2,6 +2,7 @@ import { TextAttributes } from "@opentui/core"
 import { useTheme } from "../context/theme"
 import { useDialog, type DialogContext } from "./dialog"
 import { useKeyboard } from "@opentui/solid"
+import type { JSX } from "solid-js"
 
 export type DialogAlertProps = {
   title: string
@@ -9,7 +10,7 @@ export type DialogAlertProps = {
   onConfirm?: () => void
 }
 
-export function DialogAlert(props: DialogAlertProps) {
+export function DialogAlert(props: DialogAlertProps): JSX.Element {
   const dialog = useDialog()
   const { theme } = useTheme()
 
@@ -46,13 +47,14 @@ export function DialogAlert(props: DialogAlertProps) {
         </box>
       </box>
     </box>
-  )
+  ) as unknown as JSX.Element
 }
 
-DialogAlert.show = (dialog: DialogContext, title: string, message: string) => {
+DialogAlert.show = (dialog: DialogContext, title: string, message: string): Promise<void> => {
   return new Promise<void>((resolve) => {
     dialog.replace(
-      () => <DialogAlert title={title} message={message} onConfirm={() => resolve()} />,
+      (): JSX.Element =>
+        (<DialogAlert title={title} message={message} onConfirm={() => resolve()} />) as unknown as JSX.Element,
       () => resolve(),
     )
   })

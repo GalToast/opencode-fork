@@ -206,14 +206,17 @@ function createThemeInstaller(
       })
       if (text === undefined) return
 
-      const fail = Symbol()
+      const sentinel = Symbol()
       const data = await Promise.resolve(text)
-        .then((x) => JSON.parse(x))
+        .then((x): unknown => {
+          const parsed: unknown = JSON.parse(x)
+          return parsed
+        })
         .catch((error) => {
           log.warn("failed to parse tui plugin theme", { path: spec, theme: src, error })
-          return fail
+          return sentinel
         })
-      if (data === fail) return
+      if (data === sentinel) return
 
       if (!isTheme(data)) {
         log.warn("invalid tui plugin theme", { path: spec, theme: src })
@@ -510,6 +513,7 @@ function pluginApi(runtime: RuntimeState, plugin: PluginEntry, scope: PluginScop
     },
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const theme: TuiPluginApi["theme"] = Object.assign(Object.create(api.theme), {
     install: createThemeInstaller(load.origin, load.theme_root, load.spec, plugin),
   })
@@ -523,10 +527,10 @@ function pluginApi(runtime: RuntimeState, plugin: PluginEntry, scope: PluginScop
   let count = 0
 
   const slots: TuiPluginApi["slots"] = {
-    register(plugin: TuiSlotPlugin) {
+    register(slotPlugin: TuiSlotPlugin) {
       const id = count ? `${base}:${count}` : base
       count += 1
-      scope.track(host.register({ ...plugin, id }))
+      scope.track(host.register({ ...slotPlugin, id }))
       return id
     },
   }
@@ -604,7 +608,10 @@ async function resolveExternalPlugins(list: Config.PluginOrigin[], wait: () => P
     },
     finish: async (loaded, origin, retry) => {
       const mod = await Promise.resolve()
-        .then(() => readV1Plugin(loaded.mod as Record<string, unknown>, loaded.spec, "tui") as TuiPluginModule)
+        .then((): TuiPluginModule | undefined => {
+          const next = readV1Plugin(loaded.mod, loaded.spec, "tui")
+          return next as unknown as TuiPluginModule | undefined
+        })
         .catch((error) => {
           fail("failed to load tui plugin", {
             path: loaded.spec,
@@ -923,6 +930,7 @@ async function installPluginBySpec(
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace TuiPluginRuntime {
   let dir = ""
   let loaded: Promise<void> | undefined

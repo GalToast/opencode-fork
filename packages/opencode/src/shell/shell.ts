@@ -109,4 +109,8 @@ export const Shell = {
   fallbackForPlatform,
   preferred,
   acceptable,
+  posix(name: string) {
+    const n = name.toLowerCase()
+    return n !== "cmd" && n !== "powershell" && n !== "pwsh" && !n.includes("windows")
+  },
 }

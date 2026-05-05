@@ -11,6 +11,7 @@ import z from "zod"
 import { Glob } from "../util/glob"
 import { Session } from "../session"
 import { Snapshot } from "../snapshot"
+import { Effect, Layer, ServiceMap } from "effect"
 
 const log = Log.create({ service: "storage" })
 
@@ -93,7 +94,7 @@ const MIGRATIONS: Migration[] = [
           dest: sessionDest,
         })
         const session = await Filesystem.readJson<Session.Info>(sessionFile)
-        await Filesystem.writeJson<Session.Info>(sessionDest, session)
+        await Filesystem.writeJson(sessionDest, session)
 
         log.info(`migrating messages for session ${session.id}`)
         for (const msgFile of await Glob.scan(`storage/session/message/${session.id}/*.json`, {
@@ -106,7 +107,7 @@ const MIGRATIONS: Migration[] = [
             dest: messageDest,
           })
           const message = await Filesystem.readJson<import("../session/message").Message.Info>(msgFile)
-          await Filesystem.writeJson<import("../session/message").Message.Info>(messageDest, message)
+          await Filesystem.writeJson(messageDest, message)
 
           log.info(`migrating parts for message ${message.id}`)
           for (const partFile of await Glob.scan(`storage/session/part/${session.id}/${message.id}/*.json`, {
@@ -119,7 +120,7 @@ const MIGRATIONS: Migration[] = [
               partFile,
               dest: partDest,
             })
-            await Filesystem.writeJson<unknown>(partDest, part)
+            await Filesystem.writeJson(partDest, part)
           }
         }
       }
@@ -225,8 +226,29 @@ async function list(prefix: string[]) {
   }
 }
 
+interface Interface {
+  readonly remove: (key: string[]) => Effect.Effect<void>
+  readonly read: <T>(key: string[]) => Effect.Effect<T>
+  readonly update: <T>(key: string[], fn: (draft: T) => void) => Effect.Effect<T>
+  readonly write: <T>(key: string[], content: T) => Effect.Effect<void>
+  readonly list: (prefix: string[]) => Effect.Effect<string[][]>
+}
+
+class StorageService extends ServiceMap.Service<StorageService, Interface>()("@opencode/Storage") {}
+
+const service = StorageService.of({
+  remove: (key) => Effect.promise(() => remove(key)),
+  read: (key) => Effect.promise(() => read(key)),
+  update: (key, fn) => Effect.promise(() => update(key, fn)),
+  write: (key, content) => Effect.promise(() => write(key, content)),
+  list: (prefix) => Effect.promise(() => list(prefix)),
+})
+
 export const Storage = {
   NotFoundError,
+  Service: StorageService,
+  layer: Layer.succeed(StorageService, service),
+  defaultLayer: Layer.succeed(StorageService, service),
   remove,
   read,
   update,

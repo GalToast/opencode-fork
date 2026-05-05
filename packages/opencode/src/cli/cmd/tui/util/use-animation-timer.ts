@@ -100,7 +100,7 @@ export function useSidebarAnimationTimer(
     onRainbow?: () => void
   }
 ): void {
-  useAnimationTimer((dt) => {
+  useAnimationTimer(() => {
     callbacks.onSparkle?.()
     callbacks.onPulse?.()
     callbacks.onRainbow?.()
@@ -121,23 +121,23 @@ export function useHeaderAnimationTimer(
   }
 ): void {
   // Fast animations (30ms)
-  useAnimationTimer((dt) => {
+  useAnimationTimer(() => {
     callbacks.onPulse?.()
   }, 30)
   
   // Medium animations (50ms)
-  useAnimationTimer((dt) => {
+  useAnimationTimer(() => {
     callbacks.onRainbow?.()
     callbacks.onSparkle?.()
   }, 50)
   
   // Slow animations (800ms)
-  useAnimationTimer((dt) => {
+  useAnimationTimer(() => {
     callbacks.onIcon?.()
   }, 800)
   
   // Very slow animations (2000ms)
-  useAnimationTimer((dt) => {
+  useAnimationTimer(() => {
     callbacks.onBounce?.()
   }, 2000)
 }
@@ -155,22 +155,22 @@ export function useFooterAnimationTimer(
   }
 ): void {
   // Main timer handles most animations
-  useAnimationTimer((dt) => {
+  useAnimationTimer(() => {
     callbacks.onMain?.()
   }, 50)
   
   // Blink timer
-  useAnimationTimer((dt) => {
+  useAnimationTimer(() => {
     callbacks.onBlink?.()
   }, 60)
   
   // Glow timer
-  useAnimationTimer((dt) => {
+  useAnimationTimer(() => {
     callbacks.onGlow?.()
   }, 30)
   
   // Particle timer
-  useAnimationTimer((dt) => {
+  useAnimationTimer(() => {
     callbacks.onParticle?.()
   }, 100)
 }

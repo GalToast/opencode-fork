@@ -676,7 +676,7 @@ export class OpenAICompatibleChatLanguageModel implements LanguageModelV2 {
                 controller.enqueue({
                   type: "tool-input-delta",
                   id: toolCall.id,
-                  delta: toolCallDelta.function.arguments ?? "",
+                  delta: toolCallDelta.function?.arguments ?? "",
                 })
 
                 // check if tool call is complete

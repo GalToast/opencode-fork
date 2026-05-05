@@ -83,8 +83,8 @@ export namespace SessionRevert {
           sessionID: input.sessionID,
           revert: rev,
           summary: {
-            additions: diffs.reduce((sum, x) => sum + x.additions, 0),
-            deletions: diffs.reduce((sum, x) => sum + x.deletions, 0),
+            additions: diffs.reduce((sum: number, x: Snapshot.FileDiff) => sum + x.additions, 0),
+            deletions: diffs.reduce((sum: number, x: Snapshot.FileDiff) => sum + x.deletions, 0),
             files: diffs.length,
           },
         })

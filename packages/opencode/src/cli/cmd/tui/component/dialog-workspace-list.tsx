@@ -134,6 +134,7 @@ function DialogWorkspaceCreate(props: { onSelect: (workspaceID: string) => Promi
     setCreating(undefined)
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
   return (
     <DialogSelect
       title={creating() ? "Creating Workspace" : "New Workspace"}
@@ -157,6 +158,10 @@ export function DialogWorkspaceList() {
   const [toDelete, setToDelete] = createSignal<string>()
   const [counts, setCounts] = createSignal<Record<string, number | null | undefined>>({})
 
+  const localCount = createMemo(
+    () => sync.data.session.filter((session) => !session.workspaceID && !session.parentID).length,
+  )
+
   const open = (workspaceID: string, forceCreate?: boolean) =>
     openWorkspace({
       dialog,
@@ -171,7 +176,10 @@ export function DialogWorkspaceList() {
   async function selectWorkspace(workspaceID: string) {
     if (workspaceID === "__local__") {
       if (localCount() > 0) {
-        dialog.replace(() => <DialogSessionList localOnly={true} />)
+        dialog.replace(() => {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+          return <DialogSessionList localOnly={true} />
+        })
         return
       }
       route.navigate({
@@ -182,7 +190,10 @@ export function DialogWorkspaceList() {
     }
     const count = counts()[workspaceID]
     if (count && count > 0) {
-      dialog.replace(() => <DialogSessionList workspaceID={workspaceID} />)
+      dialog.replace(() => {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+        return <DialogSessionList workspaceID={workspaceID} />
+      })
       return
     }
 
@@ -193,7 +204,10 @@ export function DialogWorkspaceList() {
     const client = scoped(sdk, sync, workspaceID)
     const listed = await client.session.list({ roots: true, limit: 1 }).catch(() => undefined)
     if (listed?.data?.length) {
-      dialog.replace(() => <DialogSessionList workspaceID={workspaceID} />)
+      dialog.replace(() => {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+        return <DialogSessionList workspaceID={workspaceID} />
+      })
       return
     }
     await open(workspaceID)
@@ -205,10 +219,6 @@ export function DialogWorkspaceList() {
     }
     return "__local__"
   })
-
-  const localCount = createMemo(
-    () => sync.data.session.filter((session) => !session.workspaceID && !session.parentID).length,
-  )
 
   let run = 0
   createEffect(() => {
@@ -270,6 +280,7 @@ export function DialogWorkspaceList() {
     void sync.workspace.sync()
   })
 
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
   return (
     <DialogSelect
       title="Workspaces"
@@ -282,7 +293,10 @@ export function DialogWorkspaceList() {
       onSelect={(option) => {
         setToDelete(undefined)
         if (option.value === "__create__") {
-          dialog.replace(() => <DialogWorkspaceCreate onSelect={(workspaceID) => open(workspaceID, true)} />)
+          dialog.replace(() => {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+            return <DialogWorkspaceCreate onSelect={(workspaceID) => open(workspaceID, true)} />
+          })
           return
         }
         void selectWorkspace(option.value)
@@ -291,27 +305,29 @@ export function DialogWorkspaceList() {
         {
           keybind: keybind.all.session_delete?.[0],
           title: "delete",
-          onTrigger: async (option) => {
-            if (option.value === "__create__" || option.value === "__local__") return
-            if (toDelete() !== option.value) {
-              setToDelete(option.value)
-              return
-            }
-            const result = await sdk.client.experimental.workspace.remove({ id: option.value }).catch(() => undefined)
-            setToDelete(undefined)
-            if (result?.error) {
-              toast.show({
-                message: "Failed to delete workspace",
-                variant: "error",
-              })
-              return
-            }
-            if (currentWorkspaceID() === option.value) {
-              route.navigate({
-                type: "home",
-              })
-            }
-            await sync.workspace.sync()
+          onTrigger: (option) => {
+            void (async () => {
+              if (option.value === "__create__" || option.value === "__local__") return
+              if (toDelete() !== option.value) {
+                setToDelete(option.value)
+                return
+              }
+              const result = await sdk.client.experimental.workspace.remove({ id: option.value }).catch(() => undefined)
+              setToDelete(undefined)
+              if (result?.error) {
+                toast.show({
+                  message: "Failed to delete workspace",
+                  variant: "error",
+                })
+                return
+              }
+              if (currentWorkspaceID() === option.value) {
+                route.navigate({
+                  type: "home",
+                })
+              }
+              await sync.workspace.sync()
+            })()
           },
         },
       ]}

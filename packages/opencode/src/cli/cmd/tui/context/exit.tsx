@@ -1,6 +1,5 @@
 import { useRenderer } from "@opentui/solid"
 import { createSimpleContext } from "./helper"
-import { FormatError, FormatUnknownError } from "@/cli/error"
 import { win32FlushInputBuffer } from "../win32"
 type Exit = ((reason?: unknown) => Promise<void>) & {
   message: {
@@ -39,6 +38,7 @@ export const { use: useExit, provider: ExitProvider } = createSimpleContext({
           renderer.destroy()
           win32FlushInputBuffer()
           if (reason) {
+            const { FormatError, FormatUnknownError } = await import("@/cli/error")
             const formatted = FormatError(reason) ?? FormatUnknownError(reason)
             if (formatted) {
               process.stderr.write(formatted + "\n")
@@ -54,7 +54,9 @@ export const { use: useExit, provider: ExitProvider } = createSimpleContext({
         message: store,
       },
     )
-    process.on("SIGHUP", () => exit())
+    process.on("SIGHUP", () => {
+      void exit()
+    })
     return exit
   },
 })

@@ -2,6 +2,7 @@ import path from "path"
 import z from "zod"
 import { Global } from "../global"
 import { Filesystem } from "../util/filesystem"
+import { Effect, Layer, ServiceMap } from "effect"
 
 const TokensSchema = z.object({
   accessToken: z.string(),
@@ -127,7 +128,92 @@ async function isTokenExpired(mcpName: string): Promise<boolean | null> {
   return entry.tokens.expiresAt < Date.now() / 1000
 }
 
-export const McpAuth = {
+export interface Interface {
+  readonly get: (mcpName: string) => Effect.Effect<Entry | undefined>
+  readonly getForUrl: (mcpName: string, serverUrl: string) => Effect.Effect<Entry | undefined>
+  readonly remove: (mcpName: string) => Effect.Effect<void>
+  readonly updateOAuthState: (mcpName: string, state: string) => Effect.Effect<void>
+  readonly getOAuthState: (mcpName: string) => Effect.Effect<string | undefined>
+  readonly clearOAuthState: (mcpName: string) => Effect.Effect<void>
+  readonly clearCodeVerifier: (mcpName: string) => Effect.Effect<void>
+  readonly isTokenExpired: (mcpName: string) => Effect.Effect<boolean | null>
+}
+
+export class Service extends ServiceMap.Service<Service, Interface>()("@opencode/McpAuth") {}
+
+export const layer: Layer.Layer<Service> = Layer.effect(
+  Service,
+  Effect.gen(function* () {
+    const get_ = Effect.fn("McpAuth.get")(function* (mcpName: string) {
+      return yield* Effect.promise(() => get(mcpName))
+    })
+
+    const getForUrl_ = Effect.fn("McpAuth.getForUrl")(function* (mcpName: string, serverUrl: string) {
+      return yield* Effect.promise(() => getForUrl(mcpName, serverUrl))
+    })
+
+    const remove_ = Effect.fn("McpAuth.remove")(function* (mcpName: string) {
+      yield* Effect.promise(() => remove(mcpName))
+    })
+
+    const updateOAuthState_ = Effect.fn("McpAuth.updateOAuthState")(function* (mcpName: string, state: string) {
+      yield* Effect.promise(() => updateOAuthState(mcpName, state))
+    })
+
+    const getOAuthState_ = Effect.fn("McpAuth.getOAuthState")(function* (mcpName: string) {
+      return yield* Effect.promise(() => getOAuthState(mcpName))
+    })
+
+    const clearOAuthState_ = Effect.fn("McpAuth.clearOAuthState")(function* (mcpName: string) {
+      yield* Effect.promise(() => clearOAuthState(mcpName))
+    })
+
+    const clearCodeVerifier_ = Effect.fn("McpAuth.clearCodeVerifier")(function* (mcpName: string) {
+      yield* Effect.promise(() => clearCodeVerifier(mcpName))
+    })
+
+    const isTokenExpired_ = Effect.fn("McpAuth.isTokenExpired")(function* (mcpName: string) {
+      return yield* Effect.promise(() => isTokenExpired(mcpName))
+    })
+
+    return Service.of({
+      get: get_,
+      getForUrl: getForUrl_,
+      remove: remove_,
+      updateOAuthState: updateOAuthState_,
+      getOAuthState: getOAuthState_,
+      clearOAuthState: clearOAuthState_,
+      clearCodeVerifier: clearCodeVerifier_,
+      isTokenExpired: isTokenExpired_,
+    })
+  }),
+)
+
+export const defaultLayer = layer
+
+export type McpAuthType = {
+  Tokens: typeof TokensSchema
+  ClientInfo: typeof ClientInfoSchema
+  Entry: typeof EntrySchema
+  get: typeof get
+  getForUrl: typeof getForUrl
+  all: typeof all
+  set: typeof set
+  remove: typeof remove
+  updateTokens: typeof updateTokens
+  updateClientInfo: typeof updateClientInfo
+  updateCodeVerifier: typeof updateCodeVerifier
+  clearCodeVerifier: typeof clearCodeVerifier
+  updateOAuthState: typeof updateOAuthState
+  getOAuthState: typeof getOAuthState
+  clearOAuthState: typeof clearOAuthState
+  isTokenExpired: typeof isTokenExpired
+  Service: typeof Service
+  layer: typeof layer
+  defaultLayer: typeof defaultLayer
+}
+
+export const McpAuth: McpAuthType = {
   Tokens: TokensSchema,
   ClientInfo: ClientInfoSchema,
   Entry: EntrySchema,
@@ -144,4 +230,7 @@ export const McpAuth = {
   getOAuthState,
   clearOAuthState,
   isTokenExpired,
+  Service,
+  layer,
+  defaultLayer,
 }

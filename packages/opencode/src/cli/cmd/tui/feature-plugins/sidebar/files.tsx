@@ -8,6 +8,7 @@ function View(props: { api: TuiPluginApi; session_id: string }) {
   const theme = () => props.api.theme.current
   const list = createMemo(() => props.api.state.session.diff(props.session_id))
 
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
   return (
     <Show when={list().length > 0}>
       <box>
@@ -21,21 +22,24 @@ function View(props: { api: TuiPluginApi; session_id: string }) {
         </box>
         <Show when={list().length <= 2 || open()}>
           <For each={list()}>
-            {(item) => (
-              <box flexDirection="row" gap={1} justifyContent="space-between">
-                <text fg={theme().textMuted} wrapMode="none">
-                  {item.file}
-                </text>
-                <box flexDirection="row" gap={1} flexShrink={0}>
-                  <Show when={item.additions}>
-                    <text fg={theme().diffAdded}>+{item.additions}</text>
-                  </Show>
-                  <Show when={item.deletions}>
-                    <text fg={theme().diffRemoved}>-{item.deletions}</text>
-                  </Show>
+            {(item) => {
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+              return (
+                <box flexDirection="row" gap={1} justifyContent="space-between">
+                  <text fg={theme().textMuted} wrapMode="none">
+                    {item.file}
+                  </text>
+                  <box flexDirection="row" gap={1} flexShrink={0}>
+                    <Show when={item.additions}>
+                      <text fg={theme().diffAdded}>+{item.additions}</text>
+                    </Show>
+                    <Show when={item.deletions}>
+                      <text fg={theme().diffRemoved}>-{item.deletions}</text>
+                    </Show>
+                  </box>
                 </box>
-              </box>
-            )}
+              )
+            }}
           </For>
         </Show>
       </box>
@@ -43,15 +47,17 @@ function View(props: { api: TuiPluginApi; session_id: string }) {
   )
 }
 
-const tui: TuiPlugin = async (api) => {
+const tui: TuiPlugin = (api) => {
   api.slots.register({
     order: 500,
     slots: {
       sidebar_content(_ctx, props) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
         return <View api={api} session_id={props.session_id} />
       },
     },
   })
+  return Promise.resolve()
 }
 
 const plugin: TuiPluginModule & { id: string } = {

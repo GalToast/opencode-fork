@@ -1,4 +1,4 @@
-import { TuiConfig, type TuiConfigInfo } from "@/config/tui"
+import type { TuiConfigInfo } from "@/config/tui"
 import { createSimpleContext } from "./helper"
 
 export const { use: useTuiConfig, provider: TuiConfigProvider } = createSimpleContext({

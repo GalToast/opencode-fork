@@ -1,5 +1,12 @@
 import type { ParsedKey } from "@opentui/core"
-import type { TuiDialogSelectOption, TuiPluginApi, TuiRouteDefinition, TuiSlotProps } from "@opencode-ai/plugin/tui"
+import type { JSX } from "solid-js"
+import type {
+  TuiCommand,
+  TuiDialogSelectOption,
+  TuiPluginApi,
+  TuiRouteDefinition,
+  TuiSlotProps,
+} from "@opencode-ai/plugin/tui"
 import type { useCommandDialog } from "@tui/component/dialog-command"
 import type { useKeybind } from "@tui/context/keybind"
 import type { useRoute } from "@tui/context/route"
@@ -239,7 +246,7 @@ export function createTuiApi(input: Input): TuiHostPluginApi {
   return {
     app: appApi(),
     command: {
-      register(cb) {
+      register(cb: () => TuiCommand[]) {
         return input.command.register(() => cb())
       },
       trigger(value) {
@@ -262,6 +269,7 @@ export function createTuiApi(input: Input): TuiHostPluginApi {
     },
     ui: {
       Dialog(props) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
         return (
           <DialogUI size={props.size} onClose={props.onClose}>
             {props.children}
@@ -269,15 +277,19 @@ export function createTuiApi(input: Input): TuiHostPluginApi {
         )
       },
       DialogAlert(props) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
         return <DialogAlert {...props} />
       },
       DialogConfirm(props) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
         return <DialogConfirm {...props} />
       },
       DialogPrompt(props) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
         return <DialogPrompt {...props} description={props.description} />
       },
       DialogSelect(props) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
         return (
           <DialogSelect
             title={props.title}
@@ -293,9 +305,11 @@ export function createTuiApi(input: Input): TuiHostPluginApi {
         )
       },
       Slot<Name extends string>(props: TuiSlotProps<Name>) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
         return <HostSlot {...props} />
       },
       Prompt(props) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
         return (
           <Prompt
             sessionID={props.sessionID}
@@ -304,7 +318,9 @@ export function createTuiApi(input: Input): TuiHostPluginApi {
             disabled={props.disabled}
             onSubmit={props.onSubmit}
             ref={props.ref}
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             hint={props.hint}
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             right={props.right}
             showPlaceholder={props.showPlaceholder}
             placeholders={props.placeholders}
@@ -320,7 +336,7 @@ export function createTuiApi(input: Input): TuiHostPluginApi {
         })
       },
       dialog: {
-        replace(render, onClose) {
+        replace(render: JSX.Element | (() => JSX.Element), onClose?: () => void) {
           input.dialog.replace(render, onClose)
         },
         clear() {
@@ -355,8 +371,8 @@ export function createTuiApi(input: Input): TuiHostPluginApi {
       return input.tuiConfig
     },
     kv: {
-      get(key, fallback) {
-        return input.kv.get(key, fallback)
+      get<Value = unknown>(key: string, fallback?: Value): Value {
+        return input.kv.get(key, fallback as Value)
       },
       set(key, value) {
         input.kv.set(key, value)
@@ -382,20 +398,20 @@ export function createTuiApi(input: Input): TuiHostPluginApi {
       list() {
         return []
       },
-      async activate() {
-        return false
+      activate() {
+        return Promise.resolve(false)
       },
-      async deactivate() {
-        return false
+      deactivate() {
+        return Promise.resolve(false)
       },
-      async add() {
-        return false
+      add() {
+        return Promise.resolve(false)
       },
-      async install() {
-        return {
+      install() {
+        return Promise.resolve({
           ok: false,
           message: "plugins.install is only available in plugin context",
-        }
+        })
       },
     },
     lifecycle,
@@ -412,8 +428,8 @@ export function createTuiApi(input: Input): TuiHostPluginApi {
       set(name) {
         return input.theme.set(name)
       },
-      async install(_jsonPath) {
-        throw new Error("theme.install is only available in plugin context")
+      install(_jsonPath) {
+        return Promise.reject(new Error("theme.install is only available in plugin context"))
       },
       mode() {
         return input.theme.mode()

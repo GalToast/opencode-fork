@@ -18,21 +18,24 @@ function dir() {
   return path.join(Global.Path.cache, "skills")
 }
 
+function checkFileExists(dest: string): Promise<boolean> {
+  return Filesystem.exists(dest).then((v) => v === true)
+}
+
 async function get(url: string, dest: string): Promise<boolean> {
-  if (Filesystem.exists(dest)) return true
-  return fetch(url)
-    .then(async (response) => {
-      if (!response.ok) {
-        log.error("failed to download", { url, status: response.status })
-        return false
-      }
-      if (response.body) await Filesystem.writeStream(dest, response.body)
-      return true
-    })
-    .catch((err) => {
-      log.error("failed to download", { url, err })
+  if (await checkFileExists(dest)) return true
+  try {
+    const response = await fetch(url)
+    if (!response.ok) {
+      log.error("failed to download", { url, status: response.status })
       return false
-    })
+    }
+    if (response.body) await Filesystem.writeStream(dest, response.body)
+    return true
+  } catch (err) {
+    log.error("failed to download", { url, err })
+    return false
+  }
 }
 
 async function pull(url: string): Promise<string[]> {
@@ -88,7 +91,7 @@ async function pull(url: string): Promise<string[]> {
       )
 
       const md = path.join(root, "SKILL.md")
-      if (Filesystem.exists(md)) result.push(root)
+      if (await checkFileExists(md)) result.push(root)
     }),
   )
 

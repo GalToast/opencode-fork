@@ -68,8 +68,8 @@ export const StatsCommand = cmd({
       })
   },
   handler: async (args) => {
-    await bootstrap(process.cwd(), () => {
-      const stats = aggregateSessionStats(args.days, args.project)
+    await bootstrap(process.cwd(), async () => {
+      const stats = await aggregateSessionStats(args.days, args.project)
 
       let modelLimit: number | undefined
       if (args.models === true) {
@@ -92,7 +92,7 @@ function getAllSessions(): Session.Info[] {
   return rows.map((row) => Session.fromRow(row))
 }
 
-export function aggregateSessionStats(days?: number, projectFilter?: string): SessionStats {
+export async function aggregateSessionStats(days?: number, projectFilter?: string): Promise<SessionStats> {
   const sessions = getAllSessions()
   const MS_IN_DAY = 24 * 60 * 60 * 1000
 
@@ -166,8 +166,8 @@ export function aggregateSessionStats(days?: number, projectFilter?: string): Se
   for (let i = 0; i < filteredSessions.length; i += BATCH_SIZE) {
     const batch = filteredSessions.slice(i, i + BATCH_SIZE)
 
-    const batchPromises = batch.map((session) => {
-      const messages = Session.messages({ sessionID: session.id })
+    const batchPromises = batch.map(async (session) => {
+      const messages = await Session.messages({ sessionID: session.id })
 
       let sessionCost = 0
       const sessionTokens = { input: 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } }
@@ -242,7 +242,7 @@ export function aggregateSessionStats(days?: number, projectFilter?: string): Se
       }
     })
 
-    const batchResults = batchPromises
+    const batchResults = await Promise.all(batchPromises)
 
     for (const result of batchResults) {
       earliestTime = Math.min(earliestTime, result.earliestTime)

@@ -192,7 +192,7 @@ const AgentCreateCommand = cmd({
 
         await fs.mkdir(targetPath, { recursive: true })
 
-        if (Filesystem.exists(filePath)) {
+        if (await Filesystem.exists(filePath)) {
           if (isFullyNonInteractive) {
             console.error(`Error: Agent file already exists: ${filePath}`)
             process.exit(1)

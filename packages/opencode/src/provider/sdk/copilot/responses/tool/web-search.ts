@@ -1,15 +1,33 @@
 import { createProviderDefinedToolFactory } from "@ai-sdk/provider-utils"
 import { z } from "zod/v4"
+import type { FlexibleSchema } from "@ai-sdk/provider-utils"
 
-export const webSearchArgsSchema = z.object({
+const webSearchArgsSchemaInternal = z.object({
+  /**
+   * Filters for the search.
+   */
   filters: z
     .object({
+      /**
+       * Allowed domains for the search.
+       * If not provided, all domains are allowed.
+       * Subdomains of the provided domains are allowed as well.
+       */
       allowedDomains: z.array(z.string()).optional(),
     })
     .optional(),
 
+  /**
+   * Search context size to use for the web search.
+   * - high: Most comprehensive context, highest cost, slower response
+   * - medium: Balanced context, cost, and latency (default)
+   * - low: Least context, lowest cost, fastest response
+   */
   searchContextSize: z.enum(["low", "medium", "high"]).optional(),
 
+  /**
+   * User location information to provide geographically relevant search results.
+   */
   userLocation: z
     .object({
       type: z.literal("approximate"),
@@ -19,7 +37,27 @@ export const webSearchArgsSchema = z.object({
       timezone: z.string().optional(),
     })
     .optional(),
+
+  action: z
+    .discriminatedUnion("type", [
+      z.object({
+        type: z.literal("search"),
+        query: z.string().nullish(),
+      }),
+      z.object({
+        type: z.literal("open_page"),
+        url: z.string(),
+      }),
+      z.object({
+        type: z.literal("find"),
+        url: z.string(),
+        pattern: z.string(),
+      }),
+    ])
+    .nullish(),
 })
+
+export const webSearchArgsSchema = webSearchArgsSchemaInternal
 
 export const webSearchToolFactory = createProviderDefinedToolFactory<
   Record<string, never>,
@@ -73,25 +111,7 @@ export const webSearchToolFactory = createProviderDefinedToolFactory<
 >({
   id: "openai.web_search",
   name: "web_search",
-  inputSchema: z.object({
-    action: z
-      .discriminatedUnion("type", [
-        z.object({
-          type: z.literal("search"),
-          query: z.string().nullish(),
-        }),
-        z.object({
-          type: z.literal("open_page"),
-          url: z.string(),
-        }),
-        z.object({
-          type: z.literal("find"),
-          url: z.string(),
-          pattern: z.string(),
-        }),
-      ])
-      .nullish(),
-  }),
+  inputSchema: webSearchArgsSchemaInternal as unknown as FlexibleSchema<Record<string, never>>,
 })
 
 export const webSearch = (

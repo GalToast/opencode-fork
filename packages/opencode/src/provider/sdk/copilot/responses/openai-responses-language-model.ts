@@ -517,23 +517,23 @@ export class OpenAIResponsesLanguageModel implements LanguageModelV2 {
     const modelConfig = getResponsesModelConfig(this.modelId)
 
     if (topK != null) {
-      warnings.push({ type: "unsupported-setting", setting: "topK" })
+      warnings.push({ type: "unsupported-setting" as const, setting: "topK" })
     }
 
     if (seed != null) {
-      warnings.push({ type: "unsupported-setting", setting: "seed" })
+      warnings.push({ type: "unsupported-setting" as const, setting: "seed" })
     }
 
     if (presencePenalty != null) {
       warnings.push({
-        type: "unsupported-setting",
+        type: "unsupported-setting" as const,
         setting: "presencePenalty",
       })
     }
 
     if (frequencyPenalty != null) {
       warnings.push({
-        type: "unsupported-setting",
+        type: "unsupported-setting" as const,
         setting: "frequencyPenalty",
       })
     }

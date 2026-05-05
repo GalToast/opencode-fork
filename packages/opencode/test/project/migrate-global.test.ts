@@ -73,7 +73,7 @@ describe("migrateFromGlobal", () => {
     // 4. The session should have been migrated to the real project ID
     const row = Database.use((db) => db.select().from(SessionTable).where(eq(SessionTable.id, id)).get())
     expect(row).toBeDefined()
-    expect(row!.project_id).toBe(real.id)
+    expect(String(row!.project_id)).toBe(String(real.id))
   })
 
   test("migrates global sessions even when project row already exists", async () => {
@@ -97,7 +97,7 @@ describe("migrateFromGlobal", () => {
 
     const row = Database.use((db) => db.select().from(SessionTable).where(eq(SessionTable.id, id)).get())
     expect(row).toBeDefined()
-    expect(row!.project_id).toBe(project.id)
+    expect(String(row!.project_id)).toBe(String(project.id))
   })
 
   test("does not claim sessions with empty directory", async () => {

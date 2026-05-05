@@ -411,7 +411,7 @@ export function verifySlashCommandWiring() {
     importsDialog: source.includes('import { DialogPlan } from "./dialog-plan"'),
     hasSlashName: source.includes('name: "plan"'),
     hasCommandTitle: source.includes('title: "Show plan state"'),
-    opensDialog: source.includes("dialog.replace(<DialogPlan sessionID={sessionID} />)"),
+    opensDialog: source.includes("dialog.replace(() =>") && source.includes("return <DialogPlan sessionID={sessionID} />"),
     sessionRouteUsesSharedOptions: routeSource.includes("...sessionPlanTrackerCommandOptions(route.sessionID)"),
   }
   const tracker = {
@@ -419,7 +419,7 @@ export function verifySlashCommandWiring() {
     hasSlashName: source.includes('name: "tracker"'),
     hasAlias: source.includes('aliases: ["tasks"]'),
     hasCommandTitle: source.includes('title: "Show tracker"'),
-    opensDialog: source.includes("dialog.replace(<DialogTracker sessionID={sessionID} />)"),
+    opensDialog: source.includes("dialog.replace(() =>") && source.includes("return <DialogTracker sessionID={sessionID} />"),
     sessionRouteUsesSharedOptions: routeSource.includes("...sessionPlanTrackerCommandOptions(route.sessionID)"),
   }
 

@@ -1036,6 +1036,49 @@ export namespace Config {
             .positive()
             .optional()
             .describe("Timeout in milliseconds for model context protocol (MCP) requests"),
+          orchestration: z
+            .object({
+              global_scheduler: z
+                .object({
+                  enabled: z.boolean().optional(),
+                  profile: z.enum(["balanced_pro", "max_throughput", "conservative"]).optional(),
+                  aging_ms: z.number().int().positive().optional(),
+                  fairness_penalty: z.number().optional(),
+                  lane_concurrency: z.record(z.string(), z.number().int().positive()).optional(),
+                  autoscale: z
+                    .object({
+                      enabled: z.boolean().optional(),
+                      main_turns_min: z.number().int().positive().optional(),
+                      main_turns_max: z.number().int().positive().optional(),
+                      cooldown_ms: z.number().int().positive().optional(),
+                      scale_up_queue_threshold: z.number().int().positive().optional(),
+                      scale_down_running_threshold: z.number().int().min(0).optional(),
+                      steer_fastlane_enabled: z.boolean().optional(),
+                      steer_fastlane_min: z.number().int().positive().optional(),
+                      steer_fastlane_max: z.number().int().positive().optional(),
+                      steer_scale_up_queue_threshold: z.number().int().positive().optional(),
+                      steer_scale_down_running_threshold: z.number().int().min(0).optional(),
+                      steer_cooldown_ms: z.number().int().positive().optional(),
+                    })
+                    .optional(),
+                  guardrails: z
+                    .object({
+                      enabled: z.boolean().optional(),
+                      tool_io_starvation_ms: z.number().int().positive().optional(),
+                      longrun_jobs_starvation_ms: z.number().int().positive().optional(),
+                      tool_io_bias: z.number().optional(),
+                      longrun_jobs_bias: z.number().optional(),
+                    })
+                    .optional(),
+                  rate_limits: z
+                    .object({
+                      global_prompt_concurrency: z.number().int().positive().optional(),
+                    })
+                    .optional(),
+                })
+                .optional(),
+            })
+            .optional(),
         })
         .optional(),
     })
@@ -1173,7 +1216,7 @@ export namespace Config {
           const data = yield* Effect.promise(() =>
             ConfigPaths.parseText(
               text,
-              "path" in options ? options.path : { source: options.source, dir: options.dir },
+              "path" in options ? options.path : { source: options.source, directory: options.dir },
             ),
           )
 

@@ -30,9 +30,9 @@ import type { Agent } from "../agent/agent"
 import { Tool } from "./tool"
 import { Config } from "../config/config"
 import path from "path"
-import { type ToolContext as PluginToolContext, type ToolDefinition } from "@opencode-ai/plugin"
+import { type ToolContext as PluginToolContext, type ToolDefinition, type Hooks } from "@opencode-ai/plugin"
 import z from "zod"
-import { Plugin } from "../plugin"
+import { Plugin, PluginService } from "../plugin"
 import { ProviderID, type ModelID } from "../provider/schema"
 import { WebSearchTool } from "./websearch"
 import { CodeSearchTool } from "./codesearch"
@@ -60,7 +60,6 @@ import { Effect, Layer, ServiceMap } from "effect"
 import { InstanceState } from "@/effect/instance-state"
 import { makeRuntime } from "@/effect/run-service"
 import { Env } from "../env"
-import { Question } from "../question"
 import { Todo } from "../session/todo"
 import { LSP } from "../lsp"
 import { FileTime } from "../file/time"
@@ -93,8 +92,7 @@ export namespace ToolRegistry {
     Service,
     never,
     | Config.Service
-    | Plugin.Service
-    | Question.Service
+    | PluginService
     | Todo.Service
     | LSP.Service
     | typeof FileTime.Service
@@ -222,8 +220,8 @@ export namespace ToolRegistry {
         const cfg = yield* config.get()
         const question = ["app", "cli", "desktop"].includes(Flag.OPENCODE_CLIENT) || Flag.OPENCODE_ENABLE_QUESTION_TOOL
         const plugins = opts?.plugins
-          ? yield* plugin.list().pipe(
-              Effect.map((list) =>
+          ? yield* Effect.promise(() => plugin.list()).pipe(
+              Effect.map((list: Hooks[]) =>
                 list.flatMap((p) => Object.entries(p.tool ?? {}).map(([id, def]) => fromPlugin(id, def))),
               ),
               Effect.catch(() => Effect.succeed([] as Tool.Info[])),
@@ -281,7 +279,7 @@ export namespace ToolRegistry {
 
       const ids = Effect.fn("ToolRegistry.ids")(function* () {
         const s = yield* InstanceState.get(state)
-        const tools = yield* all(s.custom)
+        const tools: Tool.Info[] = yield* all(s.custom)
         return tools.map((t) => t.id)
       })
 
@@ -313,7 +311,7 @@ export namespace ToolRegistry {
               description: next.description,
               parameters: next.parameters,
             }
-            yield* plugin.trigger("tool.definition", { toolID: tool.id }, output)
+            yield* Effect.promise(() => plugin.trigger("tool.definition", { toolID: tool.id }, output))
             return {
               id: tool.id,
               description: output.description,
@@ -335,7 +333,6 @@ export namespace ToolRegistry {
       layer.pipe(
         Layer.provide(Config.defaultLayer),
         Layer.provide(Plugin.defaultLayer),
-        Layer.provide(Question.defaultLayer),
         Layer.provide(Todo.defaultLayer),
         Layer.provide(LSP.defaultLayer),
         Layer.provide(FileTime.defaultLayer),

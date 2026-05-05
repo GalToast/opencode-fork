@@ -9,6 +9,7 @@ export interface Options {
   stdin?: Stdio
   stdout?: Stdio
   stderr?: Stdio
+  shell?: boolean
   abort?: AbortSignal
   kill?: NodeJS.Signals | number
   timeout?: number
@@ -46,6 +47,8 @@ export class RunFailedError extends Error {
 }
 
 export type Child = ChildProcess & { exited: Promise<number> }
+export type { ChildProcess }
+type StoppableProcess = ChildProcess & { exited?: Promise<number> }
 
 function spawn(cmd: string[], opts: Options = {}): Child {
   if (cmd.length === 0) throw new Error("Command is required")
@@ -54,6 +57,7 @@ function spawn(cmd: string[], opts: Options = {}): Child {
   const proc = launch(cmd[0], cmd.slice(1), {
     cwd: opts.cwd,
     env: opts.env === null ? {} : opts.env ? { ...process.env, ...opts.env } : undefined,
+    shell: opts.shell,
     stdio: [opts.stdin ?? "ignore", opts.stdout ?? "ignore", opts.stderr ?? "ignore"],
   })
 
@@ -123,8 +127,55 @@ async function run(cmd: string[], opts: RunOptions = {}): Promise<Result> {
   throw new RunFailedError(cmd, out.code, out.stdout, out.stderr)
 }
 
+async function stop(
+  proc: StoppableProcess,
+  opts: { kill?: NodeJS.Signals | number; timeout?: number } = {},
+): Promise<void> {
+  if (proc.exitCode !== null || proc.signalCode !== null) return
+
+  const sendSignal = (sig: NodeJS.Signals | number) => {
+    if (proc.exitCode !== null || proc.signalCode !== null) return
+    proc.kill(sig)
+  }
+
+  let exited: Promise<number>
+  if (typeof proc.exited?.then === "function") {
+    exited = proc.exited
+  } else {
+    exited = new Promise<number>((resolve, reject) => {
+      proc.once("exit", (code, signal) => resolve(code ?? (signal ? 1 : 0)))
+      proc.once("error", reject)
+    })
+  }
+
+  sendSignal(opts.kill ?? "SIGTERM")
+
+  const ms = opts.timeout ?? 5_000
+  if (ms > 0) {
+    const timer = setTimeout(() => sendSignal("SIGKILL"), ms)
+    try {
+      await exited
+    } finally {
+      clearTimeout(timer)
+    }
+    return
+  }
+
+  await exited
+}
+
+async function text(cmd: string[], opts: RunOptions = {}): Promise<Result & { text: string }> {
+  const result = await run(cmd, opts)
+  return {
+    ...result,
+    text: result.stdout.toString("utf-8"),
+  }
+}
+
 export const Process = {
   spawn,
   run,
+  text,
+  stop,
   RunFailedError,
 }

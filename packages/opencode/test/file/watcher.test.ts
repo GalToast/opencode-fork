@@ -30,7 +30,7 @@ function withWatcher<E>(directory: string, body: Effect.Effect<void, E>) {
   return Instance.provide({
     directory,
     fn: async () => {
-      const layer: Layer.Layer<FileWatcher.Service, never, never> = FileWatcher.layer.pipe(
+      const layer = FileWatcher.layer.pipe(
         Layer.provide(Config.defaultLayer),
         Layer.provide(watcherConfigLayer),
       )

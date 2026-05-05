@@ -20,6 +20,7 @@ export function Footer() {
   const connected = useConnected()
   const welcome = createMemo(() => !connected())
 
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
   return (
     <box flexDirection="row" justifyContent="space-between" gap={1} flexShrink={0}>
       <text fg={theme.textMuted}>{directory()}</text>

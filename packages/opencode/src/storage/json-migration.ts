@@ -257,7 +257,7 @@ export namespace JsonMigration {
         const id = path.basename(projectFiles[i + j], ".json")
         projectIds.add(id)
         projectValues.push({
-          id,
+          id: id as ProjectInsert["id"],
           worktree: data.worktree ?? "/",
           vcs: data.vcs as ProjectInsert["vcs"],
           name: data.name ?? undefined,
@@ -300,9 +300,9 @@ export namespace JsonMigration {
         }
         sessionIds.add(id)
         sessionValues.push({
-          id,
-          project_id: projectID,
-          parent_id: data.parentID ?? null,
+          id: id as SessionInsert["id"],
+          project_id: projectID as SessionInsert["project_id"],
+          parent_id: (data.parentID ?? null) as SessionInsert["parent_id"],
           slug: data.slug ?? "",
           directory: data.directory ?? "",
           title: data.title ?? "",
@@ -356,8 +356,8 @@ export namespace JsonMigration {
         messageSessions.set(id, sessionID)
         const rest = omitKeys(data, ["id", "sessionID"])
         values.push({
-          id,
-          session_id: sessionID,
+          id: id as MessageInsert["id"],
+          session_id: sessionID as MessageInsert["session_id"],
           time_created: data.time?.created ?? now,
           time_updated: data.time?.updated ?? now,
           data: rest as MessageInsert["data"],
@@ -391,9 +391,9 @@ export namespace JsonMigration {
         if (!sessionIds.has(sessionID)) continue
         const rest = omitKeys(data, ["id", "messageID", "sessionID"])
         values.push({
-          id,
-          message_id: messageID,
-          session_id: sessionID,
+          id: id as PartInsert["id"],
+          message_id: messageID as PartInsert["message_id"],
+          session_id: sessionID as PartInsert["session_id"],
           time_created: data.time?.created ?? now,
           time_updated: data.time?.updated ?? now,
           data: rest as PartInsert["data"],
@@ -426,7 +426,7 @@ export namespace JsonMigration {
           const todo = data[position]
           if (!todo?.content || !todo?.status || !todo?.priority) continue
           values.push({
-            session_id: sessionID,
+            session_id: sessionID as TodoInsert["session_id"],
             content: todo.content,
             status: todo.status,
             priority: todo.priority,

@@ -16,6 +16,23 @@ function normalize(input: string) {
   return input.replace(/\\/g, "/").toLowerCase()
 }
 
+/** Cast the unknown GlobalBus event payload to the expected shape for Worktree events */
+function asWorktreeReadyEvent(
+  evt: { directory?: string; payload: unknown },
+): asserts evt is { directory?: string; payload: { type: string; properties: { name: string; branch: string } } } {
+  // runtime check for type narrowing
+  if (
+    evt &&
+    typeof evt === "object" &&
+    "payload" in evt &&
+    evt.payload &&
+    typeof evt.payload === "object" &&
+    "type" in evt.payload
+  ) {
+    // narrowing complete
+  }
+}
+
 async function waitReady() {
   const { GlobalBus } = await import("../../src/bus/global")
 
@@ -25,7 +42,8 @@ async function waitReady() {
       reject(new Error("timed out waiting for worktree.ready"))
     }, 10_000)
 
-    function on(evt: { directory?: string; payload: { type: string; properties: { name: string; branch: string } } }) {
+    function on(evt: { directory?: string; payload: unknown }) {
+      asWorktreeReadyEvent(evt)
       if (evt.payload.type !== Worktree.Event.Ready.type) return
       clearTimeout(timer)
       GlobalBus.off("event", on)
@@ -79,7 +97,7 @@ describe("Worktree", () => {
     test("create returns worktree info and remove cleans up", async () => {
       await using tmp = await tmpdir({ git: true })
 
-      const info = await withInstance(tmp.path, () => Worktree.create())
+      const info = await withInstance(tmp.path, () => Worktree.create(undefined))
 
       expect(info.name).toBeDefined()
       expect(info.branch).toStartWith("opencode/")
@@ -96,7 +114,7 @@ describe("Worktree", () => {
       await using tmp = await tmpdir({ git: true })
       const ready = waitReady()
 
-      const info = await withInstance(tmp.path, () => Worktree.create())
+      const info = await withInstance(tmp.path, () => Worktree.create(undefined))
 
       // create returns before bootstrap completes, but the worktree already exists
       expect(info.name).toBeDefined()

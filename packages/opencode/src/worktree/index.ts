@@ -7,6 +7,7 @@ import { Global } from "../global"
 import { Instance } from "../project/instance"
 import { InstanceBootstrap } from "../project/bootstrap"
 import { Project } from "../project/project"
+import { ProjectID } from "../project/schema"
 import { Database, eq } from "../storage/db"
 import { ProjectTable } from "../project/project.sql"
 import { fn } from "../util/fn"
@@ -305,7 +306,9 @@ const ResetFailedError = NamedError.create(
   }
 
   async function runStartScripts(directory: string, input: { projectID: string; extra?: string }) {
-    const row = Database.use((db) => db.select().from(ProjectTable).where(eq(ProjectTable.id, input.projectID)).get())
+    const row = Database.use((db) =>
+      db.select().from(ProjectTable).where(eq(ProjectTable.id, ProjectID.make(input.projectID))).get(),
+    )
     const project = row ? Project.fromRow(row) : undefined
     const startup = project?.commands?.start?.trim() ?? ""
     const ok = await runStartScript(directory, startup, "project")

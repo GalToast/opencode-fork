@@ -5,6 +5,7 @@ import { useDialog } from "@tui/ui/dialog"
 import { useToast } from "@tui/ui/toast"
 import { useTheme } from "@tui/context/theme"
 import type { ExperimentalConsoleListOrgsResponse } from "@opencode-ai/sdk/v2"
+import type { DialogSelectOption } from "@tui/ui/dialog-select"
 
 type OrgOption = ExperimentalConsoleListOrgsResponse["orgs"][number]
 
@@ -32,7 +33,7 @@ export function DialogConsoleOrg() {
 
   const current = createMemo(() => orgs()?.find((item) => item.active))
 
-  const options = createMemo(() => {
+  const options = createMemo<DialogSelectOption<string | OrgOption>[]>(() => {
     const listed = orgs()
     if (listed === undefined) {
       return [
@@ -69,6 +70,7 @@ export function DialogConsoleOrg() {
         title: item.orgName,
         value: item,
         category: accountLabel(item),
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         categoryView: (
           <box flexDirection="row" gap={2}>
             <text fg={theme.accent}>{item.accountEmail}</text>
@@ -99,5 +101,6 @@ export function DialogConsoleOrg() {
       }))
   })
 
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
   return <DialogSelect<string | OrgOption> title="Switch org" options={options()} current={current()} />
 }

@@ -17,7 +17,6 @@ type KeybindContext = {
 
 export function QuestionPrompt(props: { request: QuestionRequest }) {
   const sdk = useSDK()
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const client: OpencodeClient = sdk.client
   const { theme } = useTheme()
   const keybind = useKeybind() as unknown as KeybindContext

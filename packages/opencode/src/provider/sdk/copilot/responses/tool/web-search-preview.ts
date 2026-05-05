@@ -1,8 +1,9 @@
 import { createProviderDefinedToolFactory } from "@ai-sdk/provider-utils"
 import { z } from "zod/v4"
+import type { FlexibleSchema } from "@ai-sdk/provider-utils"
 
-// Args validation schema
-export const webSearchPreviewArgsSchema = z.object({
+// Args validation schema - using zod v4 syntax
+const webSearchPreviewArgsSchemaInternal = z.object({
   /**
    * Search context size to use for the web search.
    * - high: Most comprehensive context, highest cost, slower response
@@ -38,7 +39,26 @@ export const webSearchPreviewArgsSchema = z.object({
       timezone: z.string().optional(),
     })
     .optional(),
+  action: z
+    .discriminatedUnion("type", [
+      z.object({
+        type: z.literal("search"),
+        query: z.string().nullish(),
+      }),
+      z.object({
+        type: z.literal("open_page"),
+        url: z.string(),
+      }),
+      z.object({
+        type: z.literal("find"),
+        url: z.string(),
+        pattern: z.string(),
+      }),
+    ])
+    .nullish(),
 })
+
+export const webSearchPreviewArgsSchema = webSearchPreviewArgsSchemaInternal
 
 export const webSearchPreview = createProviderDefinedToolFactory<
   Record<string, never>,
@@ -80,23 +100,5 @@ export const webSearchPreview = createProviderDefinedToolFactory<
 >({
   id: "openai.web_search_preview",
   name: "web_search_preview",
-  inputSchema: z.object({
-    action: z
-      .discriminatedUnion("type", [
-        z.object({
-          type: z.literal("search"),
-          query: z.string().nullish(),
-        }),
-        z.object({
-          type: z.literal("open_page"),
-          url: z.string(),
-        }),
-        z.object({
-          type: z.literal("find"),
-          url: z.string(),
-          pattern: z.string(),
-        }),
-      ])
-      .nullish(),
-  }),
+  inputSchema: webSearchPreviewArgsSchemaInternal as unknown as FlexibleSchema<Record<string, never>>,
 })

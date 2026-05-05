@@ -22,16 +22,23 @@ export type PluginRoute = {
 
 export type Route = HomeRoute | SessionRoute | PluginRoute
 
+function readInitialRoute(): Route {
+  const raw = process.env["OPENCODE_ROUTE"]
+  if (!raw) return { type: "home" }
+  const parsed: unknown = JSON.parse(raw)
+  if (!parsed || typeof parsed !== "object" || !("type" in parsed)) return { type: "home" }
+
+  const type = (parsed as { type?: unknown }).type
+  if (type === "home") return parsed as HomeRoute
+  if (type === "session") return parsed as SessionRoute
+  if (type === "plugin") return parsed as PluginRoute
+  return { type: "home" }
+}
+
 export const { use: useRoute, provider: RouteProvider } = createSimpleContext({
   name: "Route",
   init: () => {
-    const [store, setStore] = createStore<Route>(
-      process.env["OPENCODE_ROUTE"]
-        ? JSON.parse(process.env["OPENCODE_ROUTE"])
-        : {
-            type: "home",
-          },
-    )
+    const [store, setStore] = createStore<Route>(readInitialRoute())
 
     return {
       get data() {
@@ -46,7 +53,7 @@ export const { use: useRoute, provider: RouteProvider } = createSimpleContext({
 
 export type RouteContext = ReturnType<typeof useRoute>
 
-export function useRouteData<T extends Route["type"]>(type: T) {
+export function useRouteData<T extends Route["type"]>(_type: T) {
   const route = useRoute()
-  return route.data as Extract<Route, { type: typeof type }>
+  return route.data as Extract<Route, { type: typeof _type }>
 }

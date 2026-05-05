@@ -1,7 +1,7 @@
 import { createMemo } from "solid-js"
 import type { KeyBinding } from "@opentui/core"
 import { useKeybind } from "../context/keybind"
-import { Keybind, type KeybindInfo } from "@/util/keybind"
+import type { KeybindInfo } from "@/util/keybind"
 
 type KeybindContext = {
   all: Record<string, KeybindInfo[]>

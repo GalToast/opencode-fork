@@ -100,7 +100,7 @@ const blackboardHighLevelParameters = z.discriminatedUnion("action", [
 type BlackboardHighLevelParameters = z.infer<typeof blackboardHighLevelParameters>
 
 type BlackboardHighLevelMetadata = {
-  action: BlackboardHighLevelParameters["action"]
+  action: string
   key?: BlackBoardKey
   success?: boolean
   state?: Record<BlackBoardKey, BlackboardValue>
@@ -127,7 +127,7 @@ function blockerKey(resource: string) {
   return `blocker:${resource}`
 }
 
-export const BlackboardTool = Tool.define("blackboard", {
+export const BlackboardTool = Tool.define<typeof blackboardHighLevelParameters, BlackboardHighLevelMetadata>("blackboard", {
   description: [
     "High-level shared swarm blackboard for common coordination moves.",
     "",
@@ -178,11 +178,12 @@ export const BlackboardTool = Tool.define("blackboard", {
           metadata: { action: params.action, key, success: false, value: current },
         }
       }
+      const action = params.action
       await HarnessBlackboard.set(root, key, next, ctx.sessionID)
       return {
         title: `Blackboard Claim: ${params.resource}`,
         output: `Claimed '${params.resource}' for ${next.owner}.`,
-        metadata: { action: params.action, key, success: true, value: next },
+        metadata: { action, key, success: true, value: next },
       }
     }
 
@@ -197,11 +198,12 @@ export const BlackboardTool = Tool.define("blackboard", {
         sessionID: ctx.sessionID,
         createdAt: boardTimestamp(),
       }
+      const action = params.action
       const findings = await HarnessBlackboard.append(root, "findings", entry, ctx.sessionID)
       return {
         title: `Blackboard Finding: ${params.topic}`,
         output: `Published ${params.severity} finding for '${params.topic}'. Total findings: ${Array.isArray(findings) ? findings.length : 1}.`,
-        metadata: { action: params.action, key: "findings", value: entry },
+        metadata: { action, key: "findings", value: entry },
       }
     }
 
@@ -217,13 +219,16 @@ export const BlackboardTool = Tool.define("blackboard", {
         sessionID: ctx.sessionID,
         updatedAt: boardTimestamp(),
       }
+      const action = params.action
       await HarnessBlackboard.set(root, key, entry, ctx.sessionID)
       return {
         title: `Blackboard Blocker: ${params.resource}`,
         output: `Shared ${params.severity} blocker for '${params.resource}'.`,
-        metadata: { action: params.action, key, success: true, value: entry },
+        metadata: { action, key, success: true, value: entry },
       }
     }
+
+    throw new Error(`Unsupported blackboard action: ${String((params as { action?: unknown }).action)}`)
   },
 })
 
@@ -243,11 +248,11 @@ export const BlackboardSetTool = Tool.define("blackboard_set", {
   },
 })
 
-export const BlackboardGetTool = Tool.define("blackboard_get", {
+export const BlackboardGetTool = Tool.define<typeof blackboardGetParameters, BlackboardGetMetadata>("blackboard_get", {
   description:
     "Retrieve a value from the shared swarm blackboard. This allows you to access insights found by other agents in your swarm without them being in your primary conversation history.",
   parameters: blackboardGetParameters,
-  execute(params: BlackboardGetParameters, ctx: Tool.Context<BlackboardGetMetadata>) {
+  async execute(params: BlackboardGetParameters, ctx: Tool.Context<BlackboardGetMetadata>) {
     const root = resolveRootSessionID(ctx.sessionID)
     if (params.key) {
       const value = HarnessBlackboard.get(root, params.key)
@@ -339,7 +344,7 @@ export const BlackboardClearTool = Tool.define("blackboard_clear", {
   description:
     "Clear the shared swarm blackboard for the current root session. Use this when shared state is stale, contaminated, or no longer relevant.",
   parameters: blackboardClearParameters,
-  execute(_params: BlackboardClearParameters, ctx: Tool.Context<BlackboardClearMetadata>) {
+  async execute(_params: BlackboardClearParameters, ctx: Tool.Context<BlackboardClearMetadata>) {
     const root = resolveRootSessionID(ctx.sessionID)
     HarnessBlackboard.clear(root)
     return {

@@ -11,7 +11,7 @@ import { Log } from "../util/log"
 import { SessionProcessor } from "./processor"
 import { fn } from "@/util/fn"
 import { Agent } from "@/agent/agent"
-import { Plugin } from "@/plugin"
+import { Plugin, PluginService, defaultLayer as PluginDefaultLayer } from "@/plugin"
 import { Config } from "@/config/config"
 import { NotFoundError } from "@/storage/db"
 import { ModelID, ProviderID } from "@/provider/schema"
@@ -140,24 +140,14 @@ export namespace SessionCompaction {
 
   export class Service extends ServiceMap.Service<Service, Interface>()("@opencode/SessionCompaction") {}
 
-  export const layer: Layer.Layer<
-    Service,
-    unknown,
-    | typeof Bus.Service
-    | Config.Service
-    | Session.Service
-    | Agent.Service
-    | typeof Plugin.Service
-    | SessionProcessor.Service
-    | Provider.Service
-  > = Layer.effect(
+  export const layer = Layer.effect(
     Service,
     Effect.gen(function* () {
       const bus = yield* Bus.Service
       const config = yield* Config.Service
       const session = yield* Session.Service
       const agents = yield* Agent.Service
-      const plugin = yield* Plugin.Service
+      const plugin = yield* PluginService
       const processors = yield* SessionProcessor.Service
       const provider = yield* Provider.Service
 
@@ -261,11 +251,9 @@ export namespace SessionCompaction {
           ? yield* provider.getModel(agent.model.providerID, agent.model.modelID)
           : yield* provider.getModel(userMessage.model.providerID, userMessage.model.modelID)
         // Allow plugins to inject context or replace compaction prompt.
-        const compacting = yield* plugin.trigger(
-          "experimental.session.compacting",
-          { sessionID: input.sessionID },
-          { context: [], prompt: undefined },
-        )
+        const compacting = (yield* Effect.promise(() =>
+          plugin.trigger("experimental.session.compacting", { sessionID: input.sessionID }, { context: [], prompt: undefined }),
+        )) as { context: string[]; prompt?: string }
         const defaultPrompt = `Provide a detailed prompt for continuing our conversation above.
 Focus on information that would be helpful for continuing the conversation, including what we did, what we're doing, which files we're working on, and what we're going to do next.
 The summary that you construct will be used so that another agent can read it and continue the work.
@@ -313,7 +301,7 @@ When constructing the summary, try to stick to this template:
             : undefined
         const prompt = compacting.prompt ?? [defaultPrompt, ...compacting.context, semanticContext].filter(Boolean).join("\n\n")
         const msgs = structuredClone(messages)
-        yield* plugin.trigger("experimental.chat.messages.transform", {}, { messages: msgs })
+        yield* Effect.promise(() => plugin.trigger("experimental.chat.messages.transform", {}, { messages: msgs }))
         const modelMessages = yield* MessageV2.toModelMessagesEffect(msgs, model, { stripMedia: true })
         const ctx = yield* InstanceState.context
         const msg: MessageV2.Assistant = {
@@ -482,7 +470,7 @@ When constructing the summary, try to stick to this template:
         Layer.provide(Session.defaultLayer),
         Layer.provide(SessionProcessor.defaultLayer),
         Layer.provide(Agent.defaultLayer),
-        Layer.provide(Plugin.defaultLayer),
+        Layer.provide(PluginDefaultLayer),
         Layer.provide(Bus.layer),
         Layer.provide(Config.defaultLayer),
       ),

@@ -1,5 +1,5 @@
 type Definition = {
-  [method: string]: (input: unknown) => unknown
+  [method: string]: (input: any) => any
 }
 
 type ErrorPayload = {
@@ -140,9 +140,9 @@ function client<T extends Definition>(target: RpcTarget) {
     call<Method extends keyof T>(method: Method, input: Parameters<T[Method]>[0]): Promise<Awaited<ReturnType<T[Method]>>> {
       const requestId = id++
       return new Promise((resolve, reject) => {
-        pending.set(requestId, { resolve, reject })
+        pending.set(requestId, { resolve: resolve as (result: unknown) => void, reject })
         try {
-          target.postMessage(JSON.stringify({ type: "rpc.request", method, input, id: requestId } satisfies RpcRequest))
+          target.postMessage(JSON.stringify({ type: "rpc.request", method: String(method), input, id: requestId } satisfies RpcRequest))
         } catch (error) {
           pending.delete(requestId)
           reject(error instanceof Error ? error : new Error(String(error)))

@@ -2,7 +2,7 @@ import { TextAttributes } from "@opentui/core"
 import { useTheme } from "../context/theme"
 import { useDialog, type DialogContext } from "./dialog"
 import { createStore } from "solid-js/store"
-import { For } from "solid-js"
+import { For, type JSX } from "solid-js"
 import { useKeyboard } from "@opentui/solid"
 import { Locale } from "@/util/locale"
 
@@ -16,7 +16,7 @@ export type DialogConfirmProps = {
 
 export type DialogConfirmResult = boolean | undefined
 
-export function DialogConfirm(props: DialogConfirmProps) {
+export function DialogConfirm(props: DialogConfirmProps): JSX.Element {
   const dialog = useDialog()
   const { theme } = useTheme()
   const [store, setStore] = createStore({
@@ -49,40 +49,43 @@ export function DialogConfirm(props: DialogConfirmProps) {
       </box>
       <box flexDirection="row" justifyContent="flex-end" paddingBottom={1}>
         <For each={["cancel", "confirm"] as const}>
-          {(key) => (
-            <box
-              paddingLeft={1}
-              paddingRight={1}
-              backgroundColor={key === store.active ? theme.primary : undefined}
-              onMouseUp={(evt: import("@opentui/core").MouseEvent) => {
-                if (key === "confirm") props.onConfirm?.()
-                if (key === "cancel") props.onCancel?.()
-                dialog.clear()
-              }}
-            >
-              <text fg={key === store.active ? theme.selectedListItemText : theme.textMuted}>
-                {Locale.titlecase(key === "cancel" ? (props.label ?? key) : key)}
-              </text>
-            </box>
-          )}
+          {(key): JSX.Element =>
+            (
+              <box
+                paddingLeft={1}
+                paddingRight={1}
+                backgroundColor={key === store.active ? theme.primary : undefined}
+                onMouseUp={(_evt: import("@opentui/core").MouseEvent) => {
+                  if (key === "confirm") props.onConfirm?.()
+                  if (key === "cancel") props.onCancel?.()
+                  dialog.clear()
+                }}
+              >
+                <text fg={key === store.active ? theme.selectedListItemText : theme.textMuted}>
+                  {Locale.titlecase(key === "cancel" ? (props.label ?? key) : key)}
+                </text>
+              </box>
+            ) as unknown as JSX.Element
+          }
         </For>
       </box>
     </box>
-  )
+  ) as unknown as JSX.Element
 }
 
-DialogConfirm.show = (dialog: DialogContext, title: string, message: string, label?: string) => {
+DialogConfirm.show = (dialog: DialogContext, title: string, message: string, label?: string): Promise<DialogConfirmResult> => {
   return new Promise<DialogConfirmResult>((resolve) => {
     dialog.replace(
-      () => (
-        <DialogConfirm
-          title={title}
-          message={message}
-          onConfirm={() => resolve(true)}
-          onCancel={() => resolve(false)}
-          label={label}
-        />
-      ),
+      (): JSX.Element =>
+        (
+          <DialogConfirm
+            title={title}
+            message={message}
+            onConfirm={() => resolve(true)}
+            onCancel={() => resolve(false)}
+            label={label}
+          />
+        ) as unknown as JSX.Element,
       () => resolve(undefined),
     )
   })

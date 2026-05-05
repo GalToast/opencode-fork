@@ -4,7 +4,7 @@
 
 ## What This Is
 
-OpenCodex is a fork of OpenCode that adds or restores serious subsystems for orchestrating multi-turn coding work. This README presents the current restored fork honestly: focused proofs are strong, while full typecheck and live TUI capture remain active hardening work. The key additions over upstream are:
+OpenCodex is a fork of OpenCode that adds or restores serious subsystems for orchestrating multi-turn coding work. This README presents the current restored fork honestly: focused proofs are strong, `packages/opencode` typecheck and TUI lint are currently clean, while live TUI capture remains active hardening work. The key additions over upstream are:
 
 ### Subagent Orchestration
 - **Task DAGs** - tasks declare explicit `depends_on` relationships; the scheduler skips dispatch while unmet dependencies exist and propagates `failed`/`canceled`/`missing` state upstream.
@@ -43,7 +43,9 @@ bun run src/launcher.ts
 # or, after building/installing the local shim
 opencodex
 
-# Run focused tests
+# Run focused checks
+bun run typecheck
+bun run lint:tui
 bun test test/tool/task-dependencies.test.ts --timeout 30000
 bun test test/scheduler/root-fairness.test.ts --timeout 30000
 bun test test/cli/tui-render-proof.test.tsx --timeout 120000
@@ -100,7 +102,7 @@ test/
 
 - **Production stability** - the harness self-editing loop (review, healer, shadow apply) has focused smoke tests passing, but full end-to-end hardening is still active development. The live harness smoke script requires approved model credentials; it is not a vanilla CI proof. Do not rely on it as the sole gate for untrusted code.
 - **TUI on Windows** - the TUI render proof (no-model, no-network) passes reliably. PTY and non-TTY launch capture currently report inconclusive on Windows because the launcher emits terminal initialization escapes but not visible frame output. Live TUI render proof requires the render harness; do not claim full TUI correctness until the live capture path matures.
-- **Typecheck** - the full repo `bun run typecheck` exits with errors from pre-existing fork drift unrelated to the restoration work. Focused typecheck filtering for touched files is clean.
+- **Validation** - in `packages/opencode`, `bun run typecheck` and `bun run lint:tui` are currently clean. Full live model/harness smoke still depends on local credentials and provider quota.
 - **Retrieval embeddings and benchmarks** - local policies require GGUF model files. Remote policies require provider credentials with sufficient quota for embedding and reranking calls. The 22-variant retrieval harness count includes named policy sweeps; `retrieval-quality-benchmark.ts` is deterministic scoring, while substrate and trace replay benchmarks exercise the SQLite-backed retrieval path.
 - **No live session context in proof** - the render proof uses handcrafted mock sync data. A production proof would derive it from a real session DB snapshot.
 - **Secrets** - API keys are expected to come from environment/user config outside the repo, not from tracked source files.

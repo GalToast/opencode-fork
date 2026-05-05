@@ -51,7 +51,51 @@ export function createRefreshBroker<TName extends string>(input: {
     return Math.max(0, nextAllowedAtValue - now())
   }
 
-  const queue = (sessionID: string, delay = 80, surfaces?: Iterable<string>) => {
+  function flushQueued(rootSessionID: string, surface: TName) {
+    if (disposed) return
+    const key = getKey(rootSessionID, surface)
+    const next = queued.get(key)
+    if (!next) return
+    queued.delete(key)
+    queue(next.sessionID, next.delay, [surface])
+  }
+
+  function run(sessionID: string, rootSessionID: string, surfaces?: Iterable<TName>) {
+    if (disposed) return
+    const requestedSurfaces = input.normalizeNames(surfaces)
+    if (requestedSurfaces.length === 0) return
+
+    for (const surface of requestedSurfaces) {
+      const key = getKey(rootSessionID, surface)
+      if (inFlight.has(key)) {
+        const existingQueued = queued.get(key)
+        queued.set(key, {
+          sessionID,
+          delay: Math.min(existingQueued?.delay ?? 40, 40),
+          surface,
+        })
+        continue
+      }
+
+      inFlight.add(key)
+      updateInFlightSurfaces(surface, 1)
+      void input
+        .refresh(sessionID, [surface])
+        .catch((error) => {
+          input.onError?.({ sessionID, rootSessionID, surface, error })
+        })
+        .finally(() => {
+          inFlight.delete(key)
+          updateInFlightSurfaces(surface, -1)
+          const cooldown = cooldowns[surface] ?? 0
+          if (cooldown > 0) nextAllowedAt.set(key, now() + cooldown)
+          else nextAllowedAt.delete(key)
+          flushQueued(rootSessionID, surface)
+        })
+    }
+  }
+
+  function queue(sessionID: string, delay = 80, surfaces?: Iterable<string>) {
     if (disposed) return
     const rootSessionID = input.resolveRootSessionID(sessionID)
     const requestedSurfaces = input.normalizeNames(surfaces as Iterable<TName> | undefined)
@@ -93,50 +137,6 @@ export function createRefreshBroker<TName extends string>(input: {
           run(next?.sessionID ?? sessionID, rootSessionID, [surface])
         }, timerDelay),
       )
-    }
-  }
-
-  const flushQueued = (rootSessionID: string, surface: TName) => {
-    if (disposed) return
-    const key = getKey(rootSessionID, surface)
-    const next = queued.get(key)
-    if (!next) return
-    queued.delete(key)
-    queue(next.sessionID, next.delay, [surface])
-  }
-
-  const run = (sessionID: string, rootSessionID: string, surfaces?: Iterable<TName>) => {
-    if (disposed) return
-    const requestedSurfaces = input.normalizeNames(surfaces)
-    if (requestedSurfaces.length === 0) return
-
-    for (const surface of requestedSurfaces) {
-      const key = getKey(rootSessionID, surface)
-      if (inFlight.has(key)) {
-        const existingQueued = queued.get(key)
-        queued.set(key, {
-          sessionID,
-          delay: Math.min(existingQueued?.delay ?? 40, 40),
-          surface,
-        })
-        continue
-      }
-
-      inFlight.add(key)
-      updateInFlightSurfaces(surface, 1)
-      void input
-        .refresh(sessionID, [surface])
-        .catch((error) => {
-          input.onError?.({ sessionID, rootSessionID, surface, error })
-        })
-        .finally(() => {
-          inFlight.delete(key)
-          updateInFlightSurfaces(surface, -1)
-          const cooldown = cooldowns[surface] ?? 0
-          if (cooldown > 0) nextAllowedAt.set(key, now() + cooldown)
-          else nextAllowedAt.delete(key)
-          flushQueued(rootSessionID, surface)
-        })
     }
   }
 

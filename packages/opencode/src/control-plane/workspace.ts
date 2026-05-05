@@ -6,7 +6,9 @@ import type { Project } from "@/project/project"
 import { BusEvent } from "@/bus/bus-event"
 import { GlobalBus } from "@/bus/global"
 import { Log } from "@/util/log"
-import { WorkspaceTable } from "./workspace.sql"
+import { WorkspaceTable } from "@/storage/schema"
+import { WorkspaceID } from "./schema"
+import type { ProjectID } from "@/project/schema"
 import { getAdaptor } from "./adaptors"
 import { WorkspaceInfoSchema } from "./types"
 import { parseSSE } from "./sse"
@@ -68,13 +70,13 @@ const create = fn(CreateInput, async (input: z.infer<typeof CreateInput>) => {
   Database.use((db) => {
     db.insert(WorkspaceTable)
       .values({
-        id: info.id,
+        id: WorkspaceID.make(info.id),
         type: info.type,
         branch: info.branch,
         name: info.name,
         directory: info.directory,
         extra: info.extra,
-        project_id: info.projectID,
+        project_id: info.projectID as ProjectID,
       })
       .run()
   })
@@ -85,14 +87,14 @@ const create = fn(CreateInput, async (input: z.infer<typeof CreateInput>) => {
 
 function list(project: Project.Info) {
   const rows = Database.use((db): WorkspaceRow[] =>
-    db.select().from(WorkspaceTable).where(eq(WorkspaceTable.project_id, project.id)).all(),
+    db.select().from(WorkspaceTable).where(eq(WorkspaceTable.project_id, project.id as ProjectID)).all(),
   )
   return rows.map(fromRow).sort((a, b) => a.id.localeCompare(b.id))
 }
 
 const get = fn(Identifier.schema("workspace"), (id) => {
   const row = Database.use((db): WorkspaceRow | undefined =>
-    db.select().from(WorkspaceTable).where(eq(WorkspaceTable.id, id)).get(),
+    db.select().from(WorkspaceTable).where(eq(WorkspaceTable.id, WorkspaceID.make(id))).get(),
   )
   if (!row) return
   return fromRow(row)
@@ -100,13 +102,13 @@ const get = fn(Identifier.schema("workspace"), (id) => {
 
 const remove = fn(Identifier.schema("workspace"), async (id) => {
   const row = Database.use((db): WorkspaceRow | undefined =>
-    db.select().from(WorkspaceTable).where(eq(WorkspaceTable.id, id)).get(),
+    db.select().from(WorkspaceTable).where(eq(WorkspaceTable.id, WorkspaceID.make(id))).get(),
   )
   if (row) {
     const info = fromRow(row)
     const adaptor = await getAdaptor(row.type)
     await adaptor.remove(info)
-    Database.use((db) => db.delete(WorkspaceTable).where(eq(WorkspaceTable.id, id)).run())
+    Database.use((db) => db.delete(WorkspaceTable).where(eq(WorkspaceTable.id, WorkspaceID.make(id))).run())
     return info
   }
 })

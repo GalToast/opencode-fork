@@ -14,7 +14,7 @@ import { fileURLToPath } from "url"
 import { Flag } from "@/flag/flag.ts"
 import { Shell } from "@/shell/shell"
 
-import { ShellArity, BashArity } from "@/permission/arity"
+import { BashArity } from "../permission/arity"
 import { Truncate } from "./truncation"
 import { Plugin } from "@/plugin"
 

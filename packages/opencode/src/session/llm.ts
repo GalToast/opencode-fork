@@ -319,7 +319,7 @@ export namespace LLM {
       maxRetries: input.retries ?? 0,
       messages,
       model: wrapLanguageModel({
-        model: language,
+        model: language as any,
         middleware: [
           {
             specificationVersion: "v3" as const,

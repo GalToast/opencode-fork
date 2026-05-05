@@ -216,7 +216,7 @@ type RootSurfaceRawClient = {
 
 type RootSurfaceRefreshEvent = {
   type: string
-  properties?: any
+  properties?: Record<string, unknown>
 }
 
 type RootSurfaceTimer = ReturnType<typeof setTimeout>
@@ -265,11 +265,14 @@ export async function fetchRootSurfacePayloads(client: RootSurfaceRawClient | un
   )
 }
 
-export function applyRootSurfaceFetchResults(store: Record<string, any>, results: RootSurfaceFetchResult[]) {
+export function applyRootSurfaceFetchResults(
+  store: Record<string, unknown>,
+  results: RootSurfaceFetchResult[],
+) {
   for (const result of results) {
     if (!result.ok || !result.data?.rootSessionID) continue
-    const surfaces = store[result.storeKey] ?? {}
-    surfaces[result.data.rootSessionID] = result.data
+    const surfaces = (store[result.storeKey] as Record<string, unknown> | undefined) ?? {}
+    ;(surfaces)[result.data.rootSessionID] = result.data
     store[result.storeKey] = surfaces
   }
 }
@@ -278,7 +281,10 @@ export function getRootSurfaceRefreshSessionID(
   event: RootSurfaceRefreshEvent,
   lookupMessageSessionID?: (messageID: string) => string | undefined,
 ) {
-  const properties = event.properties
+  const p = event.properties
+  const str = (v: unknown): string | undefined => (typeof v === "string" ? v : undefined)
+  const obj = (v: unknown): Record<string, unknown> | undefined => (typeof v === "object" && v !== null ? (v as Record<string, unknown>) : undefined)
+
   switch (event.type) {
     case "permission.asked":
     case "question.asked":
@@ -286,21 +292,31 @@ export function getRootSurfaceRefreshSessionID(
     case "session.diff":
     case "session.status":
     case "message.removed":
-      return properties?.sessionID as string | undefined
+      return str(p?.sessionID)
     case "permission.replied":
     case "question.replied":
     case "question.rejected":
-      return properties?.sessionID as string | undefined
+      return str(p?.sessionID)
     case "session.created":
-    case "session.updated":
-      return properties?.info?.id as string | undefined
-    case "message.updated":
-      return properties?.info?.sessionID as string | undefined
-    case "message.part.updated":
-      return (properties?.part?.sessionID ?? lookupMessageSessionID?.(properties?.part?.messageID)) as string | undefined
+    case "session.updated": {
+      const info = obj(p?.info)
+      return str(info?.id)
+    }
+    case "message.updated": {
+      const info = obj(p?.info)
+      return str(info?.sessionID)
+    }
+    case "message.part.updated": {
+      const part = obj(p?.part)
+      const messageID = str(part?.messageID)
+      return str(part?.sessionID) ?? (messageID ? lookupMessageSessionID?.(messageID) : undefined)
+    }
     case "message.part.delta":
     case "message.part.removed":
-      return lookupMessageSessionID?.(properties?.messageID)
+      {
+        const messageID = str(p?.messageID)
+        return messageID ? lookupMessageSessionID?.(messageID) : undefined
+      }
     default:
       return undefined
   }
@@ -408,7 +424,7 @@ export function collectRootScopedRequests<T>(
 }
 
 export function clearSessionCaches(
-  store: Record<string, any>,
+  store: Record<string, unknown>,
   sessionID: string,
   options?: {
     fullSyncedSessions?: Set<string>
@@ -418,15 +434,25 @@ export function clearSessionCaches(
   const rootSessionID = options?.rootSessionID
   const sessionKeys = [sessionID]
   const rootKeys = rootSessionID ? [rootSessionID] : []
-  const messageIDs = (store.message?.[sessionID] ?? []).map((message: { id?: string }) => message.id).filter(Boolean)
+  const messageStore = store.message as Record<string, { id?: string }[] | undefined> | undefined
+  const messageIDs = (messageStore?.[sessionID] ?? []).map((message) => message.id).filter(Boolean)
 
   for (const key of ["permission", "question", "supervisor_inbox", "steer", "session_status", "session_diff", "todo", "message"]) {
-    for (const id of sessionKeys) delete store[key]?.[id]
+    for (const id of sessionKeys) {
+      const subStore = store[key] as Record<string, unknown> | undefined
+      if (subStore) delete subStore[id]
+    }
   }
   for (const key of ["foreground", "mission", "operator", "planner_preview", "timeline", "plan_state", "tracker_summary", "workgraph"]) {
-    for (const id of rootKeys) delete store[key]?.[id]
+    for (const id of rootKeys) {
+      const subStore = store[key] as Record<string, unknown> | undefined
+      if (subStore) delete subStore[id]
+    }
   }
-  for (const messageID of messageIDs) delete store.part?.[messageID]
+  const partStore = store.part as Record<string, unknown> | undefined
+  for (const messageID of messageIDs) {
+    if (partStore) delete partStore[messageID as string]
+  }
   options?.fullSyncedSessions?.delete(sessionID)
   if (rootSessionID) options?.fullSyncedSessions?.delete(rootSessionID)
 }
@@ -497,7 +523,7 @@ export function recordRootSurfaceRefreshDiagnostics(
 
 export const { use: useSync, provider: SyncProvider } = createSimpleContext({
   name: "Sync",
-  init: (props: { args?: Args }) => {
+  init: (_props: { args?: Args }) => {
     const [store, setStore] = createStore<{
       status: "loading" | "partial" | "complete"
       provider: Provider[]
@@ -643,7 +669,7 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
       switch (event.type) {
         case "server.instance.disposed":
           rootSurfaceRefreshScheduler.cancelAll()
-          bootstrap()
+          void bootstrap()
           break
         case "permission.replied": {
           const requests = store.permission[event.properties.sessionID]
@@ -844,9 +870,10 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
             event.properties.messageID,
             produce((draft) => {
               const part = draft[result.index]
-              const field = event.properties.field as keyof typeof part
-              const existing = part[field] as string | undefined
-              ;(part[field] as string) = (existing ?? "") + event.properties.delta
+              const field = event.properties.field
+              if (field === "text" && "text" in part) {
+                part.text = (part.text ?? "") + event.properties.delta
+              }
             }),
           )
           break
@@ -867,7 +894,7 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
         }
 
         case "lsp.updated": {
-          sdk.client.lsp.status().then((x) => setStore("lsp", x.data!))
+          void sdk.client.lsp.status().then((x) => setStore("lsp", x.data!))
           break
         }
 
@@ -908,11 +935,11 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
 
       await Promise.all(blockingRequests)
         .then(() => {
-          const providersResponse = providersPromise.then((x) => x.data!)
-          const providerListResponse = providerListPromise.then((x) => x.data!)
+          const providersResponse = providersPromise.then((x) => x.data)
+          const providerListResponse = providerListPromise.then((x) => x.data)
           const consoleStateResponse = consoleStatePromise
           const agentsResponse = agentsPromise.then((x) => x.data ?? [])
-          const configResponse = configPromise.then((x) => x.data!)
+          const configResponse = configPromise.then((x) => x.data)
           const sessionListResponse = args.continue ? sessionListPromise : undefined
 
           return Promise.all([
@@ -944,7 +971,7 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
         .then(() => {
           if (store.status !== "complete") setStore("status", "partial")
           // non-blocking
-          Promise.all([
+          void Promise.all([
             ...(args.continue ? [] : [sessionListPromise.then((sessions) => setStore("session", reconcile(sessions)))]),
             consoleStatePromise.then((consoleState) => setStore("console_state", reconcile(consoleState))),
             sdk.client.command.list().then((x) => setStore("command", reconcile(x.data ?? []))),
@@ -974,7 +1001,7 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
     }
 
     onMount(() => {
-      bootstrap()
+      void bootstrap()
     })
 
     const fullSyncedSessions = new Set<string>()
@@ -1041,11 +1068,12 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
           setStore(
             produce((draft) => {
               const match = Binary.search(draft.session, sessionID, (s) => s.id)
-              if (match.found) draft.session[match.index] = session.data!
-              if (!match.found) draft.session.splice(match.index, 0, session.data!)
+              if (match.found) draft.session[match.index] = session.data
+              if (!match.found) draft.session.splice(match.index, 0, session.data)
               draft.todo[sessionID] = todo.data ?? []
-              draft.message[sessionID] = messages.data!.map((x) => x.info)
-              for (const message of messages.data!) {
+              const sessionMessages = messages.data ?? []
+              draft.message[sessionID] = sessionMessages.map((x) => x.info)
+              for (const message of sessionMessages) {
                 draft.part[message.info.id] = message.parts
               }
               draft.session_diff[sessionID] = diff.data ?? []

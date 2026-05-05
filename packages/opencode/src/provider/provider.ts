@@ -7,11 +7,13 @@ import { NoSuchModelError, type Provider as SDK } from "ai"
 import { Log } from "../util/log"
 import { Npm } from "../npm"
 import { Hash } from "../util/hash"
-import { Plugin } from "../plugin"
+import { Plugin, PluginService } from "../plugin"
+import { defaultLayer as _PluginDefaultLayer } from "../plugin"
 import { NamedError } from "@opencode-ai/util/error"
-import { type LanguageModelV3 } from "@ai-sdk/provider"
+import { type LanguageModel } from "ai"
 import { ModelsDev } from "./models"
 import { Auth } from "../auth"
+import type { AuthInfo } from "../auth"
 import { Env } from "../env"
 import { Instance } from "../project/instance"
 import { Flag } from "../flag/flag"
@@ -121,7 +123,7 @@ export namespace Provider {
   }
 
   type BundledSDK = {
-    languageModel(modelId: string): LanguageModelV3
+    languageModel(modelId: string): LanguageModel
   }
 
   const BUNDLED_PROVIDERS: Record<string, (options: any) => BundledSDK> = {
@@ -161,7 +163,7 @@ export namespace Provider {
   }>
 
   type CustomDep = {
-    auth: (id: string) => Effect.Effect<Auth.Info | undefined>
+    auth: (id: string) => Effect.Effect<AuthInfo | undefined>
     config: () => Effect.Effect<Config.Info>
   }
 
@@ -875,7 +877,7 @@ export namespace Provider {
     readonly list: () => Effect.Effect<Record<ProviderID, Info>>
     readonly getProvider: (providerID: ProviderID) => Effect.Effect<Info>
     readonly getModel: (providerID: ProviderID, modelID: ModelID) => Effect.Effect<Model>
-    readonly getLanguage: (model: Model) => Effect.Effect<LanguageModelV3>
+    readonly getLanguage: (model: Model) => Effect.Effect<LanguageModel>
     readonly closest: (
       providerID: ProviderID,
       query: string[],
@@ -885,7 +887,7 @@ export namespace Provider {
   }
 
   interface State {
-    models: Map<string, LanguageModelV3>
+    models: Map<string, LanguageModel>
     providers: Record<ProviderID, Info>
     sdk: Map<string, BundledSDK>
     modelLoaders: Record<string, CustomModelLoader>
@@ -966,20 +968,20 @@ export namespace Provider {
       id: ProviderID.make(provider.id),
       source: "custom",
       name: provider.name,
-      env: provider.env ?? [],
+      env: [...(provider.env ?? [])] as string[],
       options: {},
       models: mapValues(provider.models, (model) => fromModelsDevModel(provider, model)),
     }
   }
 
-  const layer: Layer.Layer<Service, never, Config.Service | Auth.Service | Plugin.Service> = Layer.effect(
+  const layer: Layer.Layer<Service, never, Config.Service | Auth.Service | PluginService> = Layer.effect(
     Service,
     Effect.gen(function* () {
       const config = yield* Config.Service
       const auth = yield* Auth.Service
-      const plugin = yield* Plugin.Service
+      const plugin = yield* PluginService
 
-      const state = yield* InstanceState.make<State>(() =>
+      const state = yield* InstanceState.make<State, never>(() =>
         Effect.gen(function* () {
           using _ = log.time("state")
           const cfg = yield* config.get()
@@ -987,7 +989,7 @@ export namespace Provider {
           const database = mapValues(modelsDev, fromModelsDevProvider)
 
           const providers: Record<ProviderID, Info> = {} as Record<ProviderID, Info>
-          const languages = new Map<string, LanguageModelV3>()
+          const languages = new Map<string, LanguageModel>()
           const modelLoaders: {
             [providerID: string]: CustomModelLoader
           } = {}
@@ -1019,7 +1021,7 @@ export namespace Provider {
           }
 
           // load plugins first so config() hook runs before reading cfg.provider
-          const plugins = yield* plugin.list()
+          const plugins = yield* Effect.promise(() => plugin.list())
 
           // now read config providers - includes any modifications from plugin config() hook
           const configProviders = Object.entries(cfg.provider ?? {})
@@ -1038,7 +1040,7 @@ export namespace Provider {
             const parsed: Info = {
               id: ProviderID.make(providerID),
               name: provider.name ?? existing?.name ?? providerID,
-              env: provider.env ?? existing?.env ?? [],
+              env: [...(provider.env ?? existing?.env ?? [])] as string[],
               options: mergeDeep(existing?.options ?? {}, provider.options ?? {}),
               source: "config",
               models: existing?.models ?? {},
@@ -1194,7 +1196,7 @@ export namespace Provider {
           for (const [id, provider] of configProviders) {
             const providerID = ProviderID.make(id)
             const partial: Partial<Info> = { source: "config" }
-            if (provider.env) partial.env = provider.env
+            if (provider.env) partial.env = [...provider.env] as string[]
             if (provider.name) partial.name = provider.name
             if (provider.options) partial.options = provider.options
             mergeProvider(providerID, partial)
@@ -1231,13 +1233,13 @@ export namespace Provider {
             provider.models = yield* Effect.promise(async () => {
               const next = await models(provider, { auth: pluginAuth })
               return Object.fromEntries(
-                Object.entries(next).map(([id, model]) => [
+                Object.entries(next as Record<string, Model>).map(([id, model]) => [
                   id,
                   {
                     ...model,
                     id: ModelID.make(id),
                     providerID,
-                  },
+                  } satisfies Model,
                 ]),
               )
             })
@@ -1604,15 +1606,15 @@ export namespace Provider {
     }),
   )
 
-  export const defaultLayer = Layer.suspend(() =>
+  export const defaultLayer: Layer.Layer<Service, never> = Layer.suspend(() =>
     layer.pipe(
       Layer.provide(Config.defaultLayer),
       Layer.provide(Auth.defaultLayer),
-      Layer.provide(Plugin.defaultLayer),
+      Layer.provide(_PluginDefaultLayer),
     ),
   )
 
-  const { runPromise } = makeRuntime(Service, defaultLayer)
+  const { runPromise } = makeRuntime(Service, defaultLayer as Layer.Layer<Service, never>)
 
   export async function list() {
     return runPromise((svc) => svc.list())

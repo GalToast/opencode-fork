@@ -77,10 +77,10 @@ export function TimelinePanel(props: { sessionID: string; onMove?: (messageID: s
               gap={1}
               alignItems="center"
               onMouseDown={() => handleMove(entry.id)}
-              onMouseOver={(event) => {
+              onMouseOver={(event: { target: unknown }) => {
                 setEntryBackground(event.target, entry.ceremony ? theme.backgroundMenu : theme.backgroundElement)
               }}
-              onMouseOut={(event) => {
+              onMouseOut={(event: { target: unknown }) => {
                 setEntryBackground(event.target, entry.ceremony ? theme.backgroundElement : undefined)
               }}
               paddingTop={0}

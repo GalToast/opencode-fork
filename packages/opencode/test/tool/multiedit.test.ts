@@ -5,10 +5,11 @@ import { MultiEditTool } from "../../src/tool/multiedit"
 import { Instance } from "../../src/project/instance"
 import { tmpdir } from "../fixture/fixture"
 import { FileTime } from "../../src/file/time"
+import { MessageID } from "../../src/session/schema"
 
 const ctx = {
   sessionID: "test-multiedit-session" as any,
-  messageID: "",
+  messageID: MessageID.make("message_test_multiedit"),
   callID: "",
   agent: "build",
   abort: AbortSignal.any([]),

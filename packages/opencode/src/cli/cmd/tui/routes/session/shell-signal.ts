@@ -95,16 +95,6 @@ function resolveScopedMessageTimestamp(message: unknown) {
   return undefined
 }
 
-type ShellMessage = {
-  id: string
-  role?: string
-  finish?: string | null
-  error?: { name?: string } | null
-  time?: {
-    completed?: number | null
-  } | null
-}
-
 type ShellPart = {
   type: string
   tool?: string
@@ -114,18 +104,30 @@ type ShellPart = {
   } | null
 }
 
-function messageFinal(message: ShellMessage) {
+// Generic message type for shell signal functions that accepts any message-like object
+export type GenericMessage = {
+  id: string
+  role?: string
+  finish?: string | null
+  error?: { name?: string } | null
+  time?: {
+    completed?: number | null
+  } | null
+  [key: string]: unknown
+}
+
+function messageFinal(message: GenericMessage) {
   return !!message.finish && !["tool-calls", "unknown"].includes(message.finish)
 }
 
-function signalWindow(messages: ShellMessage[]) {
+function signalWindow(messages: GenericMessage[]) {
   const lastUserIndex = messages.findLastIndex((message) => message.role === "user")
   if (lastUserIndex <= 0) return messages
   return messages.slice(lastUserIndex)
 }
 
 export function deriveRecentShellEvent(args: {
-  messages: ShellMessage[]
+  messages: GenericMessage[]
   partsByMessage: Record<string, ShellPart[] | undefined>
   awaitingPromotion?: boolean
   sessionState?: string
@@ -213,7 +215,7 @@ function messageHasTaskInFlight(parts: ShellPart[] | undefined) {
 }
 
 export function deriveShellCeremonyCue(args: {
-  messages: ShellMessage[]
+  messages: GenericMessage[]
   partsByMessage: Record<string, ShellPart[] | undefined>
   event?: SignalEvent
 }) {
@@ -364,7 +366,7 @@ function postureFromTool(tool?: string) {
 }
 
 export function deriveShellPosture(args: {
-  messages: ShellMessage[]
+  messages: GenericMessage[]
   partsByMessage: Record<string, ShellPart[] | undefined>
   sessionState?: string
   childCount?: number
@@ -638,7 +640,7 @@ export function deriveShellSurfaceNarrative(args: {
 }
 
 export function deriveShellWorkMode(args: {
-  messages: ShellMessage[]
+  messages: GenericMessage[]
   partsByMessage: Record<string, ShellPart[] | undefined>
   sessionState?: string
   childCount?: number
@@ -700,7 +702,7 @@ export function deriveShellSwarmMode(args: {
 }
 
 export function countRecentShellSignals(args: {
-  messages: ShellMessage[]
+  messages: GenericMessage[]
   partsByMessage: Record<string, ShellPart[] | undefined>
 }) {
   const messages = signalWindow(args.messages)

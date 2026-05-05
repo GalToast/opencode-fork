@@ -5,7 +5,7 @@ import z from "zod"
 import { Effect, Layer, ServiceMap } from "effect"
 import { NamedError } from "@opencode-ai/util/error"
 import type { Agent } from "@/agent/agent"
-import { Bus } from "@/bus"
+import { Bus, type BusInterface } from "@/bus"
 import { InstanceState } from "@/effect/instance-state"
 import { makeRuntime } from "@/effect/run-service"
 import { Flag } from "@/flag/flag"
@@ -63,7 +63,7 @@ export namespace Skill {
     readonly available: (agent?: Agent.Info) => Effect.Effect<Info[]>
   }
 
-  const add = Effect.fnUntraced(function* (state: State, match: string, bus: Bus.Interface) {
+  const add = Effect.fnUntraced(function* (state: State, match: string, bus: BusInterface) {
     const md = yield* Effect.tryPromise({
       try: () => ConfigMarkdown.parse(match),
       catch: (err) => err,
@@ -105,7 +105,7 @@ export namespace Skill {
 
   const scan = Effect.fnUntraced(function* (
     state: State,
-    bus: Bus.Interface,
+    bus: BusInterface,
     root: string,
     pattern: string,
     opts?: { dot?: boolean; scope?: string },
@@ -137,8 +137,8 @@ export namespace Skill {
   const loadSkills = Effect.fnUntraced(function* (
     state: State,
     config: Config.Interface,
-    discovery: Discovery.Interface,
-    bus: Bus.Interface,
+    discoveryDirs: () => Promise<string[]>,
+    bus: BusInterface,
     fsys: AppFileSystem.Interface,
     directory: string,
     worktree: string,
@@ -177,7 +177,7 @@ export namespace Skill {
     }
 
     for (const url of cfg.skills?.urls ?? []) {
-      const pulledDirs = yield* discovery.pull(url)
+      const pulledDirs = yield* Effect.promise(() => discoveryDirs().then(d => d))
       for (const dir of pulledDirs) {
         state.dirs.add(dir)
         yield* scan(state, bus, dir, SKILL_PATTERN)
@@ -192,14 +192,13 @@ export namespace Skill {
   export const layer = Layer.effect(
     Service,
     Effect.gen(function* () {
-      const discovery = yield* Discovery.Service
       const config = yield* Config.Service
       const bus = yield* Bus.Service
       const fsys = yield* AppFileSystem.Service
       const state = yield* InstanceState.make(
         Effect.fn("Skill.state")(function* (ctx) {
           const s: State = { skills: {}, dirs: new Set() }
-          yield* loadSkills(s, config, discovery, bus, fsys, ctx.directory, ctx.worktree)
+          yield* loadSkills(s, config, () => Discovery.pull(ctx.worktree), bus, fsys, ctx.directory, ctx.worktree)
           return s
         }),
       )
@@ -231,7 +230,6 @@ export namespace Skill {
   )
 
   export const defaultLayer = layer.pipe(
-    Layer.provide(Discovery.defaultLayer),
     Layer.provide(Config.defaultLayer),
     Layer.provide(Bus.layer),
     Layer.provide(AppFileSystem.defaultLayer),

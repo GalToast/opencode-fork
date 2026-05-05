@@ -7,13 +7,14 @@ const id = "internal:home-footer"
 function Directory(props: { api: TuiPluginApi }) {
   const theme = () => props.api.theme.current
   const dir = createMemo(() => {
-    const dir = props.api.state.path.directory || process.cwd()
-    const out = dir.replace(Global.Path.home, "~")
+    const directory = props.api.state.path.directory || process.cwd()
+    const out = directory.replace(Global.Path.home, "~")
     const branch = props.api.state.vcs?.branch
     if (branch) return out + ":" + branch
     return out
   })
 
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
   return <text fg={theme().textMuted}>{dir()}</text>
 }
 
@@ -24,6 +25,7 @@ function Mcp(props: { api: TuiPluginApi }) {
   const err = createMemo(() => list().some((item) => item.status === "failed"))
   const count = createMemo(() => list().filter((item) => item.status === "connected").length)
 
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
   return (
     <Show when={has()}>
       <box gap={1} flexDirection="row" flexShrink={0}>
@@ -47,6 +49,7 @@ function Mcp(props: { api: TuiPluginApi }) {
 function Version(props: { api: TuiPluginApi }) {
   const theme = () => props.api.theme.current
 
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
   return (
     <box flexShrink={0}>
       <text fg={theme().textMuted}>{props.api.app.version}</text>
@@ -55,6 +58,7 @@ function Version(props: { api: TuiPluginApi }) {
 }
 
 function View(props: { api: TuiPluginApi }) {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
   return (
     <box
       width="100%"
@@ -74,15 +78,17 @@ function View(props: { api: TuiPluginApi }) {
   )
 }
 
-const tui: TuiPlugin = async (api) => {
+const tui: TuiPlugin = (api) => {
   api.slots.register({
     order: 100,
     slots: {
       home_footer() {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
         return <View api={api} />
       },
     },
   })
+  return Promise.resolve()
 }
 
 const plugin: TuiPluginModule & { id: string } = {

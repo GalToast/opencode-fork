@@ -22,6 +22,9 @@ interface DagLayout {
   maxColumnWidth: number
 }
 
+type Theme = ReturnType<typeof useTheme>["theme"]
+type ThemeColor = Theme["text"]
+
 function topologicalSortWithLevels(tasks: TrackerTask[]): DagLayout {
   if (tasks.length === 0) {
     return { nodes: [], levels: 0, maxColumnWidth: 0 }
@@ -111,14 +114,7 @@ function topologicalSortWithLevels(tasks: TrackerTask[]): DagLayout {
   }
 }
 
-function renderDagNode(node: DagNode, theme: any, pulsePhase: number): string {
-  const statusColors: Record<string, string> = {
-    closed: theme.success,
-    in_progress: theme.accent,
-    blocked: theme.error,
-    open: theme.textMuted,
-  }
-
+function renderDagNode(node: DagNode, _theme: Theme, _pulsePhase: number): string {
   const statusIcons: Record<string, string> = {
     closed: "✓",
     in_progress: "◐",
@@ -132,11 +128,8 @@ function renderDagNode(node: DagNode, theme: any, pulsePhase: number): string {
     bug: "◉",
   }
 
-  const color = statusColors[node.status] || theme.text
   const statusIcon = statusIcons[node.status] || "○"
   const typeIcon = typeIcons[node.type] || "•"
-
-  const pulseIntensity = node.status === "in_progress" ? Math.sin(pulsePhase + node.level * 0.5) * 0.3 + 0.7 : 1
 
   const maxWidth = 32
   let title = node.title
@@ -172,9 +165,8 @@ function renderDagNode(node: DagNode, theme: any, pulsePhase: number): string {
   return `${topBorder}\n${contentLine}\n${bottomBorder}`
 }
 
-function renderDagConnections(nodes: DagNode[], theme: any): string[] {
+function _renderDagConnections(nodes: DagNode[], _theme: Theme): string[] {
   const lines: string[] = []
-  const nodeMap = new Map(nodes.map((n) => [n.id, n]))
 
   const levelGroups = new Map<number, DagNode[]>()
   nodes.forEach((node) => {
@@ -228,6 +220,7 @@ function renderDagConnections(nodes: DagNode[], theme: any): string[] {
   return lines
 }
 
+/* eslint-disable @typescript-eslint/no-unsafe-return */
 export function DialogTracker(props: { sessionID: string }) {
   const sync = useSync()
   const dialog = useDialog()
@@ -235,7 +228,7 @@ export function DialogTracker(props: { sessionID: string }) {
   const { theme } = useTheme()
   const [viewMode, setViewMode] = createSignal<"list" | "dag">("list")
   const [pulsePhase, setPulsePhase] = createSignal(0)
-  const [filterText, setFilterText] = createSignal("")
+  const [filterText, _setFilterText] = createSignal("")
   const [statusFilter, setStatusFilter] = createSignal<"all" | "open" | "in_progress" | "blocked" | "closed">("all")
 
   onMount(() => {
@@ -332,8 +325,8 @@ export function DialogTracker(props: { sessionID: string }) {
 
     // Sort tasks: blocked first, then in_progress, then open, then closed
     const sortedTasks = [...filteredTasks].sort((a, b) => {
-      const priority = { blocked: 0, in_progress: 1, open: 2, closed: 3 }
-      return (priority[a.status as keyof typeof priority] ?? 4) - (priority[b.status as keyof typeof priority] ?? 4)
+      const priority: Record<TrackerTask["status"], number> = { blocked: 0, in_progress: 1, open: 2, closed: 3 }
+      return (priority[a.status] ?? 4) - (priority[b.status] ?? 4)
     })
 
     return sortedTasks.map((task) => {
@@ -369,11 +362,11 @@ export function DialogTracker(props: { sessionID: string }) {
     dialog.clear()
   }
 
-  const SummaryMetric = (props: { label: string; value: number; color?: any }) => (
+  const SummaryMetric = (metricProps: { label: string; value: number; color?: ThemeColor }) => (
     <box flexDirection="row" gap={1}>
-      <text fg={theme.textMuted}>{props.label}:</text>
-      <text fg={props.color ?? theme.text} attributes={TextAttributes.BOLD}>
-        {String(props.value)}
+      <text fg={theme.textMuted}>{metricProps.label}:</text>
+      <text fg={metricProps.color ?? theme.text} attributes={TextAttributes.BOLD}>
+        {String(metricProps.value)}
       </text>
     </box>
   )
@@ -413,6 +406,7 @@ export function DialogTracker(props: { sessionID: string }) {
       <Show
         when={trackerSummary()}
         fallback={
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           <box paddingLeft={4} paddingRight={4} paddingTop={2}>
             <text fg={theme.textMuted}>No tasks tracked yet.</text>
             <text fg={theme.textMuted} paddingTop={1}>Tasks will appear here once created.</text>
@@ -438,9 +432,11 @@ export function DialogTracker(props: { sessionID: string }) {
 
             <Show when={viewMode() === "dag"}>
               <box paddingLeft={2} paddingRight={2} paddingTop={2} flexDirection="column">
-                <Show when={dagLayout().nodes.length > 0} fallback={
-                  <text fg={theme.textMuted}>No tasks to visualize</text>
-                }>
+                <Show
+                  when={dagLayout().nodes.length > 0}
+                  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+                  fallback={<text fg={theme.textMuted}>No tasks to visualize</text>}
+                >
                   <box flexDirection="row" gap={4} flexWrap="wrap">
                     <For each={dagLayout().nodes}>
                       {(node) => (
@@ -530,3 +526,4 @@ export function DialogTracker(props: { sessionID: string }) {
     </box>
   )
 }
+/* eslint-enable @typescript-eslint/no-unsafe-return */

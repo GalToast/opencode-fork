@@ -15,7 +15,6 @@ export type StashEntry = {
 
 const MAX_STASH_ENTRIES = 50
 
-// eslint-disable-next-line @typescript-eslint/unbound-method
 export const { use: usePromptStash, provider: PromptStashProvider } = createSimpleContext({
   name: "PromptStash",
   init: () => {

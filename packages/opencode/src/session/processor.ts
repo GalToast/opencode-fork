@@ -4,7 +4,7 @@ import { Agent } from "@/agent/agent"
 import { Bus } from "@/bus"
 import { Config } from "@/config/config"
 import { Permission } from "@/permission"
-import { Plugin } from "@/plugin"
+import { Plugin, PluginService, defaultLayer as PluginDefaultLayer } from "@/plugin"
 import { Snapshot } from "@/snapshot"
 import { Log } from "@/util/log"
 import { Session } from "."
@@ -58,19 +58,7 @@ export namespace SessionProcessor {
 
   export class Service extends ServiceMap.Service<Service, Interface>()("@opencode/SessionProcessor") {}
 
-  export const layer: Layer.Layer<
-    Service,
-    never,
-    | Session.Service
-    | Config.Service
-    | Bus.Service
-    | Snapshot.Service
-    | Agent.Service
-    | LLM.Service
-    | Permission.Service
-    | Plugin.Service
-    | SessionStatus.Service
-  > = Layer.effect(
+  export const layer = Layer.effect(
     Service,
     Effect.gen(function* () {
       const session = yield* Session.Service
@@ -80,7 +68,7 @@ export namespace SessionProcessor {
       const agents = yield* Agent.Service
       const llm = yield* LLM.Service
       const permission = yield* Permission.Service
-      const plugin = yield* Plugin.Service
+      const plugin = yield* PluginService
       const status = yield* SessionStatus.Service
 
       const create = Effect.fn("SessionProcessor.create")(function* (input: Input) {
@@ -348,16 +336,21 @@ export namespace SessionProcessor {
 
             case "text-end":
               if (!ctx.currentText) return
-              ctx.currentText.text = ctx.currentText.text.trimEnd()
-              ctx.currentText.text = (yield* plugin.trigger(
-                "experimental.text.complete",
-                {
-                  sessionID: ctx.sessionID,
-                  messageID: ctx.assistantMessage.id,
-                  partID: ctx.currentText.id,
-                },
-                { text: ctx.currentText.text },
-              )).text
+              const currentText = ctx.currentText
+              currentText.text = currentText.text.trimEnd()
+              ctx.currentText.text = (
+                (yield* Effect.promise(() =>
+                  plugin.trigger(
+                    "experimental.text.complete",
+                    {
+                      sessionID: ctx.sessionID,
+                      messageID: ctx.assistantMessage.id,
+                      partID: currentText.id,
+                    },
+                    { text: currentText.text },
+                  ),
+                )) as { text: string }
+              ).text
               ctx.currentText.time = { start: Date.now(), end: Date.now() }
               if (value.providerMetadata) ctx.currentText.metadata = value.providerMetadata
               yield* session.updatePart(ctx.currentText)
@@ -545,7 +538,7 @@ export namespace SessionProcessor {
         Layer.provide(Agent.defaultLayer),
         Layer.provide(LLM.defaultLayer),
         Layer.provide(Permission.defaultLayer),
-        Layer.provide(Plugin.defaultLayer),
+        Layer.provide(PluginDefaultLayer),
         Layer.provide(SessionStatus.layer.pipe(Layer.provide(Bus.layer))),
         Layer.provide(Bus.layer),
         Layer.provide(Config.defaultLayer),

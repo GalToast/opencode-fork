@@ -4,13 +4,15 @@ import os from "os"
 import path from "path"
 import { Instance } from "../src/project/instance"
 import { Log } from "../src/util/log"
+import { ProviderID } from "../src/provider/schema"
+import { ModelID } from "../src/provider/schema"
 
 const JSON_OUTPUT = process.env.HARNESS_BENCH_JSON === "1"
 const benchmarkModel =
   process.env.HARNESS_BENCH_PROVIDER_ID && process.env.HARNESS_BENCH_MODEL_ID
     ? {
-        providerID: process.env.HARNESS_BENCH_PROVIDER_ID,
-        modelID: process.env.HARNESS_BENCH_MODEL_ID,
+        providerID: ProviderID.make(process.env.HARNESS_BENCH_PROVIDER_ID),
+        modelID: ModelID.make(process.env.HARNESS_BENCH_MODEL_ID),
       }
     : undefined
 

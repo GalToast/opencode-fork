@@ -1,6 +1,4 @@
-import type { Session as SessionApi } from "@/session"
-
-type SessionRow = SessionApi.Info
+import type { Session } from "@opencode-ai/sdk/v2"
 
 export function buildSessionListSearchQuery(query: string) {
   return {
@@ -10,7 +8,7 @@ export function buildSessionListSearchQuery(query: string) {
   }
 }
 
-export function sortRootSessions<T extends SessionRow>(sessions: T[]) {
+export function sortRootSessions<T extends Pick<Session, "id" | "parentID" | "time">>(sessions: T[]) {
   return sessions
     .filter((session) => session.parentID === undefined)
     .toSorted((a, b) => b.time.updated - a.time.updated)

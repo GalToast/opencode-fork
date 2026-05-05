@@ -1,8 +1,8 @@
-import type { LanguageModelV3FinishReason } from "@ai-sdk/provider"
+import type { LanguageModelV2FinishReason } from "@ai-sdk/provider"
 
 export function mapOpenAICompatibleFinishReason(
   finishReason: string | null | undefined,
-): LanguageModelV3FinishReason["unified"] {
+): LanguageModelV2FinishReason {
   switch (finishReason) {
     case "stop":
       return "stop"

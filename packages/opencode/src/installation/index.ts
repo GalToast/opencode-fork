@@ -6,6 +6,7 @@ import z from "zod"
 import { NamedError } from "@opencode-ai/util/error"
 import { Log } from "../util/log"
 import { Flag } from "../flag/flag"
+import { Effect, Layer, ServiceMap } from "effect"
 
 declare global {
   const OPENCODE_VERSION: string
@@ -300,4 +301,51 @@ export namespace Installation {
     )
     return release.tag_name.replace(/^v/, "")
   }
+
+  export type ReleaseType = "major" | "minor" | "patch"
+
+  export function getReleaseType(current: string, latest: string): ReleaseType {
+    const parse = (v: string) => {
+      const parts = v.split("-")[0]!.split(".")
+      return {
+        major: parseInt(parts[0] ?? "0", 10),
+        minor: parseInt(parts[1] ?? "0", 10),
+        patch: parseInt(parts[2] ?? "0", 10),
+      }
+    }
+
+    const currentParts = parse(current)
+    const latestParts = parse(latest)
+
+    if (latestParts.major > currentParts.major) return "major"
+    if (latestParts.minor > currentParts.minor) return "minor"
+    return "patch"
+  }
+
+  export interface Interface {
+    readonly latest: (installMethod?: Method) => Effect.Effect<string, Error, never>
+    readonly upgrade: (installMethod: Method, target: string) => Effect.Effect<void, Error, never>
+    readonly info: () => Effect.Effect<Info, Error, never>
+    readonly method: () => Effect.Effect<Method, Error, never>
+    readonly isPreview: () => Effect.Effect<boolean, never, never>
+    readonly isLocal: () => Effect.Effect<boolean, never, never>
+    readonly getReleaseType: (current: string, latest: string) => Effect.Effect<ReleaseType, never, never>
+  }
+
+  export class Service extends ServiceMap.Service<Service, Interface>()("@opencode/Installation") {}
+
+  export const layer = Layer.effect(
+    Service,
+    Effect.gen(function* () {
+      return Service.of({
+        latest: (installMethod?: Method) => Effect.tryPromise(() => latest(installMethod)),
+        upgrade: (installMethod: Method, target: string) => Effect.tryPromise(() => upgrade(installMethod, target)),
+        info: () => Effect.tryPromise(() => info()),
+        method: () => Effect.tryPromise(() => method()),
+        isPreview: () => Effect.succeed(isPreview()),
+        isLocal: () => Effect.succeed(isLocal()),
+        getReleaseType: (current: string, latest: string) => Effect.succeed(getReleaseType(current, latest)),
+      })
+    }),
+  )
 }

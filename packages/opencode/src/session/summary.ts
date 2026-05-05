@@ -7,6 +7,8 @@ import { Identifier } from "@/id/id"
 import { Snapshot } from "@/snapshot"
 import { Storage } from "@/storage/storage"
 import { Bus } from "@/bus"
+import { Effect, Layer, ServiceMap } from "effect"
+import { SessionID } from "./schema"
 
 function unquoteGitPath(input: string) {
   if (!input.startsWith('"')) return input
@@ -70,17 +72,18 @@ const summarize = fn(
     messageID: z.string(),
   }),
   async (input) => {
-    const all = Session.messages({ sessionID: input.sessionID })
+    const sessionID = SessionID.make(input.sessionID)
+    const all = await Session.messages({ sessionID })
     await Promise.all([
-      summarizeSession({ sessionID: input.sessionID, messages: all }),
+      summarizeSession({ sessionID, messages: all }),
       summarizeMessage({ messageID: input.messageID, messages: all }),
     ])
   },
 )
 
-async function summarizeSession(input: { sessionID: string; messages: MessageV2.WithParts[] }) {
+async function summarizeSession(input: { sessionID: SessionID; messages: MessageV2.WithParts[] }) {
   const diffs = await computeDiff({ messages: input.messages })
-  Session.setSummary({
+  await Session.setSummary({
     sessionID: input.sessionID,
     summary: {
       additions: diffs.reduce((sum, x) => sum + x.additions, 0),
@@ -106,14 +109,16 @@ async function summarizeMessage(input: { messageID: string; messages: MessageV2.
     ...userMsg.summary,
     diffs,
   }
-  Session.updateMessage(userMsg)
+  await Session.updateMessage(userMsg)
 }
 
+const DiffInput = z.object({
+  sessionID: Identifier.schema("session"),
+  messageID: Identifier.schema("message").optional(),
+})
+
 const diff = fn(
-  z.object({
-    sessionID: Identifier.schema("session"),
-    messageID: Identifier.schema("message").optional(),
-  }),
+  DiffInput,
   async (input) => {
     const diffs = await Storage.read<Snapshot.FileDiff[]>(["session_diff", input.sessionID]).catch(() => [])
     const next = diffs.map((item) => {
@@ -157,7 +162,25 @@ async function computeDiff(input: { messages: MessageV2.WithParts[] }) {
   return []
 }
 
+interface Interface {
+  readonly summarize: (input: { sessionID: string; messageID: string }) => Effect.Effect<void>
+  readonly diff: (input: { sessionID: string; messageID?: string }) => Effect.Effect<Snapshot.FileDiff[]>
+  readonly computeDiff: (input: { messages: MessageV2.WithParts[] }) => Effect.Effect<Snapshot.FileDiff[]>
+}
+
+class SessionSummaryService extends ServiceMap.Service<SessionSummaryService, Interface>()("@opencode/SessionSummary") {}
+
+const service = SessionSummaryService.of({
+  summarize: (input) => Effect.promise(() => summarize(input)),
+  diff: (input) => Effect.promise(() => diff(input)),
+  computeDiff: (input) => Effect.promise(() => computeDiff(input)),
+})
+
 export const SessionSummary = {
+  DiffInput,
+  Service: SessionSummaryService,
+  layer: Layer.succeed(SessionSummaryService, service),
+  defaultLayer: Layer.succeed(SessionSummaryService, service),
   summarize,
   diff,
   computeDiff,

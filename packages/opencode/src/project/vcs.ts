@@ -1,4 +1,4 @@
-import { Effect, Layer, ServiceMap, Stream } from "effect"
+import { Effect, Layer, ServiceMap } from "effect"
 import path from "path"
 import { Bus } from "@/bus"
 import { BusEvent } from "@/bus/bus-event"
@@ -139,12 +139,11 @@ export namespace Vcs {
 
   export class Service extends ServiceMap.Service<Service, Interface>()("@opencode/Vcs") {}
 
-  export const layer: Layer.Layer<Service, never, AppFileSystem.Service | Git.Service | Bus.Service> = Layer.effect(
+  export const layer: Layer.Layer<Service, never, AppFileSystem.Service | Git.Service> = Layer.effect(
     Service,
     Effect.gen(function* () {
       const fs = yield* AppFileSystem.Service
       const git = yield* Git.Service
-      const bus = yield* Bus.Service
 
       const state = yield* InstanceState.make<State>(
         Effect.fn("Vcs.state")((ctx) =>
@@ -162,20 +161,21 @@ export namespace Vcs {
             const value = { current, root }
             log.info("initialized", { branch: value.current, default_branch: value.root?.name })
 
-            yield* bus.subscribe(FileWatcher.Event.Updated).pipe(
-              Stream.filter((evt) => evt.properties.file.endsWith("HEAD")),
-              Stream.runForEach((_evt) =>
-                Effect.gen(function* () {
-                  const next = yield* get()
-                  if (next !== value.current) {
-                    log.info("branch changed", { from: value.current, to: next })
-                    value.current = next
-                    yield* bus.publish(Event.BranchUpdated, { branch: next })
-                  }
-                }),
-              ),
-              Effect.forkScoped,
-            )
+            const unsubscribe = Bus.subscribe(FileWatcher.Event.Updated, (event) => {
+              if (!event.properties.file.endsWith("HEAD")) return
+              const eff = Effect.gen(function* () {
+                const next = yield* get()
+                if (next !== value.current) {
+                  log.info("branch changed", { from: value.current, to: next })
+                  value.current = next
+                  // Publish event (fire-and-forget via void)
+                  void Bus.publish(Event.BranchUpdated, { branch: next })
+                }
+              })
+              // Fork in background to avoid blocking the event handler
+              Effect.runFork(eff.pipe(Effect.orDie))
+            })
+            void unsubscribe
 
             return value
           }),
@@ -217,7 +217,6 @@ export namespace Vcs {
   const defaultLayer = layer.pipe(
     Layer.provide(Git.defaultLayer),
     Layer.provide(AppFileSystem.defaultLayer),
-    Layer.provide(Bus.layer),
   )
 
   const { runPromise } = makeRuntime(Service, defaultLayer)

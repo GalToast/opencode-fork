@@ -63,7 +63,7 @@ export async function migrateTuiConfig(input: MigrateInput) {
     if (extracted.theme === undefined && extracted.keybinds === undefined && !tui) continue
 
     const target = path.join(path.dirname(file), "tui.json")
-    const targetExists = Filesystem.exists(target)
+    const targetExists = await Filesystem.exists(target)
     if (targetExists) continue
 
     const payload: Record<string, unknown> = {
@@ -104,7 +104,7 @@ function normalizeTui(data: Record<string, unknown>) {
 
 async function backupAndStripLegacy(file: string, source: string) {
   const backup = file + ".tui-migration.bak"
-  const hasBackup = Filesystem.exists(backup)
+  const hasBackup = await Filesystem.exists(backup)
   const backed = hasBackup
     ? true
     : await Bun.write(backup, source)
@@ -148,10 +148,10 @@ async function opencodeFiles(input: { directories: string[]; managed: string }) 
   if (Flag.OPENCODE_CONFIG) files.push(Flag.OPENCODE_CONFIG)
   files.push(...ConfigPaths.fileInDirectory(input.managed, "opencode"))
 
-  const existing = unique(files).map((file) => {
-    const ok = Filesystem.exists(file)
+  const existing = await Promise.all(unique(files).map(async (file) => {
+    const ok = await Filesystem.exists(file)
     return ok ? file : undefined
-  })
+  }))
   return existing.filter((file): file is string => !!file)
 }
 

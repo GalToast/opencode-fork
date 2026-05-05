@@ -11,7 +11,7 @@ async function inspectMcpSurface(sessionID: string, turnID?: string) {
     .map(([clientName]) => clientName)
     .sort()
   const knownMcpClientIDs = state.knownMcpClientIDs
-  const requestedVisibleClients = CapabilityRuntime.visibleMcpClientIDs(sessionID, turnID)
+  const requestedVisibleClients = CapabilityRuntime.visibleMcpClientIDs(sessionID)
   const requestedBrowserClients =
     requestedVisibleClients === undefined
       ? []
@@ -32,10 +32,13 @@ async function inspectMcpSurface(sessionID: string, turnID?: string) {
       : [...new Set([...browserClients, ...requestedVisibleClients])].sort()
 
   const sampleMcpTools: Record<string, string[]> = {}
+  const allTools = await MCP.tools().catch(() => ({} as Record<string, { client?: string; name: string }>))
   for (const clientName of inspectClients) {
-    const tools = await MCP.tools([clientName]).catch(() => ({}))
-    const ids = Object.keys(tools).sort()
-    if (ids.length > 0) sampleMcpTools[clientName] = ids.slice(0, 6)
+    const clientTools = Object.values(allTools)
+      .filter((t) => t.client === clientName)
+      .map((t) => t.name)
+      .sort()
+    if (clientTools.length > 0) sampleMcpTools[clientName] = clientTools.slice(0, 6)
   }
 
   return {

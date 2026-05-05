@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "switchboard": {
+      "command": "C:\\Users\\HP\\AppData\\Local\\Programs\\Python\\Python311\\python.exe",
+      "args": [
+        "C:\\Users\\HP\\Desktop\\Temp while my comp is at the shop\\trading-bots\\comms_server.py"
+      ]
+    }
+  }
+}

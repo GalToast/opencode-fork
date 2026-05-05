@@ -1,4 +1,4 @@
-import { BoxRenderable, TextareaRenderable, MouseEvent, PasteEvent, t, dim, fg } from "@opentui/core"
+import { decodePasteBytes, type BoxRenderable, type TextareaRenderable, type MouseEvent, type PasteEvent } from "@opentui/core"
 import { createEffect, createMemo, onMount, createSignal, onCleanup, on, Show, Switch, Match } from "solid-js"
 import "opentui-spinner/solid"
 import path from "path"
@@ -73,6 +73,7 @@ function randomIndex(count: number) {
   return Math.floor(Math.random() * count)
 }
 
+/* eslint-disable @typescript-eslint/no-unsafe-return */
 export function Prompt(props: PromptProps) {
   let input: TextareaRenderable
   let anchor: BoxRenderable
@@ -90,6 +91,7 @@ export function Prompt(props: PromptProps) {
   const stash = usePromptStash()
   const command = useCommandDialog()
   const renderer = useRenderer()
+  const exit = useExit()
   const { theme, syntax } = useTheme()
   const kv = useKV()
   const list = createMemo(() => props.placeholders?.normal ?? [])
@@ -221,10 +223,10 @@ export function Prompt(props: PromptProps) {
         value: "prompt.clear",
         category: "Prompt",
         hidden: true,
-        onSelect: (dialog) => {
+        onSelect: (promptDialog) => {
           input.extmarks.clear()
           input.clear()
-          dialog.clear()
+          promptDialog.clear()
         },
       },
       {
@@ -233,10 +235,10 @@ export function Prompt(props: PromptProps) {
         keybind: "input_submit",
         category: "Prompt",
         hidden: true,
-        onSelect: (dialog) => {
+        onSelect: (promptDialog) => {
           if (!input.focused) return
-          submit()
-          dialog.clear()
+          void submit()
+          promptDialog.clear()
         },
       },
       {
@@ -245,15 +247,17 @@ export function Prompt(props: PromptProps) {
         keybind: "input_paste",
         category: "Prompt",
         hidden: true,
-        onSelect: async () => {
-          const content = await Clipboard.read()
-          if (content?.mime.startsWith("image/")) {
-            await pasteImage({
-              filename: "clipboard",
-              mime: content.mime,
-              content: content.data,
-            })
-          }
+        onSelect: () => {
+          void (async () => {
+            const content = await Clipboard.read()
+            if (content?.mime.startsWith("image/")) {
+              pasteImage({
+                filename: "clipboard",
+                mime: content.mime,
+                content: content.data,
+              })
+            }
+          })()
         },
       },
       {
@@ -263,7 +267,7 @@ export function Prompt(props: PromptProps) {
         category: "Session",
         hidden: true,
         enabled: status().type !== "idle",
-        onSelect: (dialog) => {
+        onSelect: (promptDialog) => {
           if (autocomplete.visible) return
           if (!input.focused) return
           // TODO: this should be its own command
@@ -280,12 +284,12 @@ export function Prompt(props: PromptProps) {
           }, 5000)
 
           if (store.interrupt >= 2) {
-            sdk.client.session.abort({
+            void sdk.client.session.abort({
               sessionID: props.sessionID,
             })
             setStore("interrupt", 0)
           }
-          dialog.clear()
+          promptDialog.clear()
         },
       },
       {
@@ -296,83 +300,85 @@ export function Prompt(props: PromptProps) {
         slash: {
           name: "editor",
         },
-        onSelect: async (dialog) => {
-          dialog.clear()
+        onSelect: (promptDialog) => {
+          void (async () => {
+            promptDialog.clear()
 
-          // replace summarized text parts with the actual text
-          const text = store.prompt.parts
-            .filter((p) => p.type === "text")
-            .reduce((acc, p) => {
-              if (!p.source) return acc
-              return acc.replace(p.source.text.value, p.text)
-            }, store.prompt.input)
+            // replace summarized text parts with the actual text
+            const text = store.prompt.parts
+              .filter((p) => p.type === "text")
+              .reduce((acc, p) => {
+                if (!p.source) return acc
+                return acc.replace(p.source.text.value, p.text)
+              }, store.prompt.input)
 
-          const nonTextParts = store.prompt.parts.filter((p) => p.type !== "text")
+            const nonTextParts = store.prompt.parts.filter((p) => p.type !== "text")
 
-          const value = text
-          const content = await Editor.open({ value, renderer })
-          if (!content) return
+            const value = text
+            const content = await Editor.open({ value, renderer })
+            if (!content) return
 
-          input.setText(content)
+            input.setText(content)
 
-          // Update positions for nonTextParts based on their location in new content
-          // Filter out parts whose virtual text was deleted
-          // this handles a case where the user edits the text in the editor
-          // such that the virtual text moves around or is deleted
-          const updatedNonTextParts = nonTextParts
-            .map((part) => {
-              let virtualText = ""
-              if (part.type === "file" && part.source?.text) {
-                virtualText = part.source.text.value
-              } else if (part.type === "agent" && part.source) {
-                virtualText = part.source.value
-              }
+            // Update positions for nonTextParts based on their location in new content
+            // Filter out parts whose virtual text was deleted
+            // this handles a case where the user edits the text in the editor
+            // such that the virtual text moves around or is deleted
+            const updatedNonTextParts = nonTextParts
+              .map((part) => {
+                let virtualText = ""
+                if (part.type === "file" && part.source?.text) {
+                  virtualText = part.source.text.value
+                } else if (part.type === "agent" && part.source) {
+                  virtualText = part.source.value
+                }
 
-              if (!virtualText) return part
+                if (!virtualText) return part
 
-              const newStart = content.indexOf(virtualText)
-              // if the virtual text is deleted, remove the part
-              if (newStart === -1) return null
+                const newStart = content.indexOf(virtualText)
+                // if the virtual text is deleted, remove the part
+                if (newStart === -1) return null
 
-              const newEnd = newStart + virtualText.length
+                const newEnd = newStart + virtualText.length
 
-              if (part.type === "file" && part.source?.text) {
-                return {
-                  ...part,
-                  source: {
-                    ...part.source,
-                    text: {
-                      ...part.source.text,
+                if (part.type === "file" && part.source?.text) {
+                  return {
+                    ...part,
+                    source: {
+                      ...part.source,
+                      text: {
+                        ...part.source.text,
+                        start: newStart,
+                        end: newEnd,
+                      },
+                    },
+                  }
+                }
+
+                if (part.type === "agent" && part.source) {
+                  return {
+                    ...part,
+                    source: {
+                      ...part.source,
                       start: newStart,
                       end: newEnd,
                     },
-                  },
+                  }
                 }
-              }
 
-              if (part.type === "agent" && part.source) {
-                return {
-                  ...part,
-                  source: {
-                    ...part.source,
-                    start: newStart,
-                    end: newEnd,
-                  },
-                }
-              }
+                return part
+              })
+              .filter((part) => part !== null)
 
-              return part
+            setStore("prompt", {
+              input: content,
+              // keep only the non-text parts because the text parts were
+              // already expanded inline
+              parts: updatedNonTextParts,
             })
-            .filter((part) => part !== null)
-
-          setStore("prompt", {
-            input: content,
-            // keep only the non-text parts because the text parts were
-            // already expanded inline
-            parts: updatedNonTextParts,
-          })
-          restoreExtmarksFromParts(updatedNonTextParts)
-          input.cursorOffset = Bun.stringWidth(content)
+            restoreExtmarksFromParts(updatedNonTextParts)
+            input.cursorOffset = Bun.stringWidth(content)
+          })()
         },
       },
       {
@@ -443,7 +449,7 @@ export function Prompt(props: PromptProps) {
       setStore("extmarkToPartIndex", new Map())
     },
     submit() {
-      submit()
+      void submit()
     },
   }
 
@@ -556,7 +562,7 @@ export function Prompt(props: PromptProps) {
       value: "prompt.stash",
       category: "Prompt",
       enabled: !!store.prompt.input,
-      onSelect: (dialog) => {
+      onSelect: (promptDialog) => {
         if (!store.prompt.input) return
         stash.push({
           input: store.prompt.input,
@@ -566,7 +572,7 @@ export function Prompt(props: PromptProps) {
         input.clear()
         setStore("prompt", { input: "", parts: [] })
         setStore("extmarkToPartIndex", new Map())
-        dialog.clear()
+        promptDialog.clear()
       },
     },
     {
@@ -574,7 +580,7 @@ export function Prompt(props: PromptProps) {
       value: "prompt.stash.pop",
       category: "Prompt",
       enabled: stash.list().length > 0,
-      onSelect: (dialog) => {
+      onSelect: (promptDialog) => {
         const entry = stash.pop()
         if (entry) {
           input.setText(entry.input)
@@ -582,7 +588,7 @@ export function Prompt(props: PromptProps) {
           restoreExtmarksFromParts(entry.parts)
           input.gotoBufferEnd()
         }
-        dialog.clear()
+        promptDialog.clear()
       },
     },
     {
@@ -590,8 +596,8 @@ export function Prompt(props: PromptProps) {
       value: "prompt.stash.list",
       category: "Prompt",
       enabled: stash.list().length > 0,
-      onSelect: (dialog) => {
-        dialog.replace(() => (
+      onSelect: (promptDialog) => {
+        promptDialog.replace(() => (
           <DialogStash
             onSelect={(entry) => {
               input.setText(entry.input)
@@ -611,7 +617,7 @@ export function Prompt(props: PromptProps) {
     if (!store.prompt.input) return
     const trimmed = store.prompt.input.trim()
     if (trimmed === "exit" || trimmed === "quit" || trimmed === ":q") {
-      exit()
+      void exit()
       return
     }
     const selectedModel = local.model.current()
@@ -667,7 +673,7 @@ export function Prompt(props: PromptProps) {
     const variant = local.model.variant.current()
 
     if (store.mode === "shell") {
-      sdk.client.session.shell({
+      void sdk.client.session.shell({
         sessionID,
         agent: local.agent.current().name,
         model: {
@@ -681,20 +687,20 @@ export function Prompt(props: PromptProps) {
       inputText.startsWith("/") &&
       iife(() => {
         const firstLine = inputText.split("\n")[0]
-        const command = firstLine.split(" ")[0].slice(1)
-        return sync.data.command.some((x) => x.name === command)
+        const commandName = firstLine.split(" ")[0].slice(1)
+        return sync.data.command.some((x) => x.name === commandName)
       })
     ) {
       // Parse command from first line, preserve multi-line content in arguments
       const firstLineEnd = inputText.indexOf("\n")
       const firstLine = firstLineEnd === -1 ? inputText : inputText.slice(0, firstLineEnd)
-      const [command, ...firstLineArgs] = firstLine.split(" ")
+      const [commandName, ...firstLineArgs] = firstLine.split(" ")
       const restOfInput = firstLineEnd === -1 ? "" : inputText.slice(firstLineEnd + 1)
       const args = firstLineArgs.join(" ") + (restOfInput ? "\n" + restOfInput : "")
 
-      sdk.client.session.command({
+      void sdk.client.session.command({
         sessionID,
-        command: command.slice(1),
+        command: commandName.slice(1),
         arguments: args,
         agent: local.agent.current().name,
         model: `${selectedModel.providerID}/${selectedModel.modelID}`,
@@ -749,8 +755,6 @@ export function Prompt(props: PromptProps) {
       }, 50)
     input.clear()
   }
-  const exit = useExit()
-
   function pasteText(text: string, virtualText: string) {
     const currentOffset = input.visualCursor.offset
     const extmarkStart = currentOffset
@@ -785,7 +789,7 @@ export function Prompt(props: PromptProps) {
     )
   }
 
-  async function pasteImage(file: { filename?: string; content: string; mime: string }) {
+  function pasteImage(file: { filename?: string; content: string; mime: string }) {
     const currentOffset = input.visualCursor.offset
     const extmarkStart = currentOffset
     const count = store.prompt.parts.filter((x) => x.type === "file" && x.mime.startsWith("image/")).length
@@ -940,7 +944,7 @@ export function Prompt(props: PromptProps) {
                   const content = await Clipboard.read()
                   if (content?.mime.startsWith("image/")) {
                     e.preventDefault()
-                    await pasteImage({
+                    pasteImage({
                       filename: "clipboard",
                       mime: content.mime,
                       content: content.data,
@@ -1016,13 +1020,13 @@ export function Prompt(props: PromptProps) {
                 // Normalize line endings at the boundary
                 // Windows ConPTY/Terminal often sends CR-only newlines in bracketed paste
                 // Replace CRLF first, then any remaining CR
-                const normalizedText = event.text.replace(/\r\n/g, "\n").replace(/\r/g, "\n")
+                const normalizedText = decodePasteBytes(event.bytes).replace(/\r\n/g, "\n").replace(/\r/g, "\n")
                 const pastedContent = normalizedText.trim()
 
                 // Windows Terminal <1.25 can surface image-only clipboard as an
                 // empty bracketed paste. Windows Terminal 1.25+ does not.
                 if (!pastedContent) {
-                  command.trigger("prompt.paste")
+                  void command.trigger("prompt.paste")
                   return
                 }
 
@@ -1049,7 +1053,7 @@ export function Prompt(props: PromptProps) {
                         .then((buffer) => Buffer.from(buffer).toString("base64"))
                         .catch(() => {})
                       if (content) {
-                        await pasteImage({
+                        pasteImage({
                           filename,
                           mime,
                           content,
@@ -1161,7 +1165,11 @@ export function Prompt(props: PromptProps) {
           />
         </box>
         <box flexDirection="row" justifyContent="space-between">
-          <Show when={status().type !== "idle"} fallback={props.hint ?? <text />}>
+          <Show
+            when={status().type !== "idle"}
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            fallback={props.hint ?? <text />}
+          >
             <box
               flexDirection="row"
               gap={1}
@@ -1170,7 +1178,11 @@ export function Prompt(props: PromptProps) {
             >
               <box flexShrink={0} flexDirection="row" gap={1}>
                 <box marginLeft={1}>
-                  <Show when={kv.get("animations_enabled", true)} fallback={<text fg={theme.textMuted}>[⋯]</text>}>
+                  <Show
+                    when={kv.get("animations_enabled", true)}
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+                    fallback={<text fg={theme.textMuted}>[⋯]</text>}
+                  >
                     <spinner color={spinnerDef().color} frames={spinnerDef().frames} interval={40} />
                   </Show>
                 </box>
@@ -1209,7 +1221,7 @@ export function Prompt(props: PromptProps) {
                       const r = retry()
                       if (!r) return
                       if (isTruncated()) {
-                        DialogAlert.show(dialog, "Retry Error", r.message)
+                        void DialogAlert.show(dialog, "Retry Error", r.message)
                       }
                     }
 
@@ -1276,3 +1288,4 @@ export function Prompt(props: PromptProps) {
     </>
   )
 }
+/* eslint-enable @typescript-eslint/no-unsafe-return */

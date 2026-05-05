@@ -16,7 +16,6 @@ import { Installation } from "@/installation"
 import { useKV } from "../context/kv"
 import { useCommandDialog } from "../component/dialog-command"
 import type { Route } from "@tui/context/route"
-import type { Session as SessionApi } from "@/session"
 
 type HomeCommandContext = {
   register: (
@@ -46,7 +45,14 @@ type HomeRouteContext = {
   navigate: (route: Route) => void
 }
 
-type SessionRow = SessionApi.Info
+type SessionRow = {
+  id: string
+  parentID?: string
+  time: {
+    updated: number
+  }
+  title: string
+}
 
 export function Home() {
   const sync = useSync()
@@ -116,7 +122,7 @@ export function Home() {
     </Show>
   )
 
-  let prompt: PromptRef
+  let prompt: PromptRef | undefined
   const args = useArgs() as HomeArgsContext
   const [handoffSignature, setHandoffSignature] = createSignal("")
 
@@ -264,7 +270,7 @@ export function Home() {
           <Prompt
             ref={(r) => {
               prompt = r
-              promptRef.set(r)
+              if (r !== undefined) promptRef.set(r)
             }}
             hint={Hint}
           />

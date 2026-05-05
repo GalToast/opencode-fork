@@ -5,6 +5,7 @@ import { Tips } from "./tips-view"
 const id = "internal:home-tips"
 
 function View(props: { show: boolean }) {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
   return (
     <box height={4} minHeight={0} width="100%" maxWidth={75} alignItems="center" paddingTop={3} flexShrink={1}>
       <Show when={props.show}>
@@ -14,7 +15,7 @@ function View(props: { show: boolean }) {
   )
 }
 
-const tui: TuiPlugin = async (api) => {
+const tui: TuiPlugin = (api) => {
   api.command.register(() => [
     {
       title: api.kv.get("tips_hidden", false) ? "Show tips" : "Hide tips",
@@ -36,10 +37,12 @@ const tui: TuiPlugin = async (api) => {
         const hidden = createMemo(() => api.kv.get("tips_hidden", false))
         const first = createMemo(() => api.state.session.count() === 0)
         const show = createMemo(() => !first() && !hidden())
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
         return <View show={show()} />
       },
     },
   })
+  return Promise.resolve()
 }
 
 const plugin: TuiPluginModule & { id: string } = {

@@ -25,6 +25,7 @@ import {
   useLingeringShellEvent,
   useShellChargeExchange,
   useShellClimate,
+  type GenericMessage,
 } from "./shell-signal"
 
 type HeaderSessionStatus = {
@@ -123,12 +124,12 @@ export function Header(props: HeaderProps = {}) {
       localSessionChildren()
         .filter((sessionID) => sync.data.session_status?.[sessionID]?.type === "retry").length,
   )
-  const messages = createMemo<Message[]>(
+  const messages = createMemo<GenericMessage[]>(
     () =>
-      resolveSessionMessageScope({
-        messagesBySession: sync.data.message,
+      (resolveSessionMessageScope({
+        messagesBySession: (sync.data.message ?? {}) as Record<string, GenericMessage[] | undefined>,
         sessionID: route.sessionID,
-      }).messages,
+      }).messages as unknown) as GenericMessage[],
   )
   const permissionRequests = createMemo(() => sync.data.permission?.[route.sessionID] ?? [])
   const questionRequests = createMemo(() => sync.data.question?.[route.sessionID] ?? [])
@@ -140,7 +141,7 @@ export function Header(props: HeaderProps = {}) {
   const steerStatus = createMemo(() => sync.data.steer?.[route.sessionID])
   const modelContext = createMemo(() =>
     buildModelContextSummary({
-      messages: messages(),
+      messages: messages() as unknown as Message[],
       providers: sync.data.provider,
     }),
   )
@@ -184,7 +185,7 @@ export function Header(props: HeaderProps = {}) {
         childCount: localChildCount(),
       }),
       activeChildCount: localActiveChildCount(),
-      flaggedChildCount: localFlaggedChildCount,
+      flaggedChildCount: localFlaggedChildCount(),
     }),
   )
   const shellCounts = createMemo(() => countRecentShellSignals({ messages: messages(), partsByMessage: sync.data.part }))
@@ -203,7 +204,7 @@ export function Header(props: HeaderProps = {}) {
       () => pendingPermissionCount() + pendingQuestionCount() + pendingSupervisorCount() + localFlaggedChildCount(),
     ),
   })
-  const recentCompletionAt = createMemo(() => messages().findLast((item) => item.role === "assistant")?.time?.completed)
+  const recentCompletionAt = createMemo(() => messages().findLast((item) => item.role === "assistant")?.time?.completed ?? undefined)
   const shellCharge = useShellChargeExchange({
     active: isThinking,
     recentCompletionAt,

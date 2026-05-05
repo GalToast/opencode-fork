@@ -1,7 +1,7 @@
 import { useKeyboard, useRenderer, useTerminalDimensions } from "@opentui/solid"
 import { batch, createContext, Show, useContext, type JSX, type ParentProps } from "solid-js"
 import { useTheme } from "@tui/context/theme"
-import { MouseButton, Renderable, RGBA } from "@opentui/core"
+import { MouseButton, RGBA, type Renderable } from "@opentui/core"
 import { createStore } from "solid-js/store"
 import { useToast } from "./toast"
 import { Flag } from "@/flag/flag"
@@ -130,7 +130,7 @@ function init() {
       })
       refocus()
     },
-    replace(input: JSX.Element, onClose?: () => void) {
+    replace(input: JSX.Element | (() => JSX.Element), onClose?: () => void) {
       traceDialogEvent("replace", { stackLength: store.stack.length })
       if (store.stack.length === 0) {
         focus = renderer.currentFocusedRenderable
@@ -139,10 +139,11 @@ function init() {
       for (const item of store.stack) {
         if (item.onClose) item.onClose()
       }
+      const element = typeof input === "function" ? (input as () => JSX.Element)() : input
       setStore("size", "medium")
       setStore("stack", [
         {
-          element: input,
+          element,
           onClose,
         },
       ])

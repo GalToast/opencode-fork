@@ -29,7 +29,7 @@ const bin = quote(process.execPath.replaceAll("\\", "/"))
 const bash = (() => {
   const shell = Shell.acceptable()
   if (Shell.name(shell) === "bash") return shell
-  return Shell.gitbash()
+  return Bun.which("bash")
 })()
 const shells = (() => {
   if (process.platform !== "win32") {

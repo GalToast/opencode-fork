@@ -9,7 +9,7 @@ afterEach(async () => {
 
 test("test 1", async () => {
   const db = Database.Client()
-  await db.insert(ProjectTable).values({
+  await (db as any).insert(ProjectTable).values({
     id: "p1",
     name: "p1", 
     worktree: "/tmp/p1",
@@ -21,7 +21,7 @@ test("test 1", async () => {
 
 test("test 2", async () => {
   const db = Database.Client()
-  await db.insert(ProjectTable).values({
+  await (db as any).insert(ProjectTable).values({
     id: "p2",
     name: "p2", 
     worktree: "/tmp/p2",

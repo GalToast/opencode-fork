@@ -62,10 +62,10 @@ async function createSupervisorContext(input: { tmpPath: string; callID: string 
       agent: "build",
       abort: AbortSignal.any([]),
       extra: { bypassAgentCheck: true },
-      messages: [],
+      messages: [] as any[],
       metadata: () => {},
       ask: async () => {},
-    },
+    } as any,
   }
 }
 

@@ -14,6 +14,7 @@ import { GlobalBus } from "@/bus/global"
 import { existsSync } from "fs"
 import { git } from "../util/git"
 import { Glob } from "../util/glob"
+import { Effect, Layer, ServiceMap } from "effect"
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace Project {
@@ -66,6 +67,9 @@ export namespace Project {
   }
 
   type Row = typeof ProjectTable.$inferSelect
+  type SessionRow = typeof SessionTable.$inferSelect
+  const dbclient = (db: Database.TxOrDb) => db as any
+  const dbeq = eq as any
 
   export function fromRow(row: Row): Info {
     const icon =
@@ -120,10 +124,10 @@ export namespace Project {
             cwd: sandbox,
           })
             .then((result) =>
-              result.text()
+              result
                 .split("\n")
                 .filter(Boolean)
-                .map((x) => x.trim())
+                .map((x: string) => x.trim())
                 .toSorted(),
             )
             .catch(() => undefined)
@@ -155,7 +159,7 @@ export namespace Project {
         const top = await git(["rev-parse", "--show-toplevel"], {
           cwd: sandbox,
         })
-          .then((result) => gitpath(sandbox, result.text()))
+          .then((result) => gitpath(sandbox, result))
           .catch(() => undefined)
 
         if (!top) {
@@ -173,7 +177,7 @@ export namespace Project {
           cwd: sandbox,
         })
           .then((result) => {
-            const common = gitpath(sandbox, result.text())
+            const common = gitpath(sandbox, result)
             // Avoid going to parent of sandbox when git-common-dir is empty.
             return common === sandbox ? sandbox : path.dirname(common)
           })
@@ -204,7 +208,7 @@ export namespace Project {
       }
     })
 
-    const row = Database.use((db) => db.select().from(ProjectTable).where(eq(ProjectTable.id, data.id)).get())
+    const row = Database.use((db) => dbclient(db).select().from(ProjectTable).where(dbeq(ProjectTable.id, data.id)).get())
     const existing = await iife(async () => {
       if (row) return fromRow(row)
       const fresh: Info = {
@@ -262,7 +266,7 @@ export namespace Project {
       commands: result.commands,
     }
     Database.use((db) =>
-      db.insert(ProjectTable).values(insert).onConflictDoUpdate({ target: ProjectTable.id, set: updateSet }).run(),
+      dbclient(db).insert(ProjectTable).values(insert).onConflictDoUpdate({ target: ProjectTable.id, set: updateSet }).run(),
     )
     GlobalBus.emit("event", {
       payload: {
@@ -282,7 +286,7 @@ export namespace Project {
     }),
     (input) => {
       const result = Database.use((db) =>
-        db
+        dbclient(db)
           .update(ProjectTable)
           .set({
             name: input.name,
@@ -291,7 +295,7 @@ export namespace Project {
             commands: input.commands,
             time_updated: Date.now(),
           })
-          .where(eq(ProjectTable.id, input.projectID))
+          .where(dbeq(ProjectTable.id, input.projectID))
           .returning()
           .get(),
       )
@@ -332,23 +336,25 @@ export namespace Project {
   }
 
   async function migrateFromGlobal(id: string, worktree: string) {
-    const row = Database.use((db) => db.select().from(ProjectTable).where(eq(ProjectTable.id, "global")).get())
+    const row = Database.use((db) =>
+      dbclient(db).select().from(ProjectTable).where(dbeq(ProjectTable.id, "global")).get(),
+    )
     if (!row) return
 
     const sessions = Database.use((db) =>
-      db.select().from(SessionTable).where(eq(SessionTable.project_id, "global")).all(),
-    )
+      dbclient(db).select().from(SessionTable).where(dbeq(SessionTable.project_id, "global")).all(),
+    ) as SessionRow[]
     if (sessions.length === 0) return
 
     log.info("migrating sessions from global", { newProjectID: id, worktree, count: sessions.length })
 
-    await work(10, sessions, (sessionRow) => {
+    await work(10, sessions, async (sessionRow) => {
       // Skip sessions that belong to a different directory
       if (sessionRow.directory && sessionRow.directory !== worktree) return
 
       log.info("migrating session", { sessionID: sessionRow.id, from: "global", to: id })
       Database.use((db) =>
-        db.update(SessionTable).set({ project_id: id }).where(eq(SessionTable.id, sessionRow.id)).run(),
+        dbclient(db).update(SessionTable).set({ project_id: id }).where(dbeq(SessionTable.id, sessionRow.id)).run(),
       )
     }).catch((error) => {
       log.error("failed to migrate sessions from global to project", { error, projectId: id })
@@ -357,34 +363,34 @@ export namespace Project {
 
   export function setInitialized(id: string) {
     Database.use((db) =>
-      db
+      dbclient(db)
         .update(ProjectTable)
         .set({
           time_initialized: Date.now(),
         })
-        .where(eq(ProjectTable.id, id))
+        .where(dbeq(ProjectTable.id, id))
         .run(),
     )
   }
 
   export function list() {
     return Database.use((db) =>
-      db
+      dbclient(db)
         .select()
         .from(ProjectTable)
         .all()
-        .map((row) => fromRow(row)),
+        .map((row: Row) => fromRow(row)),
     )
   }
 
   export function get(id: string): Info | undefined {
-    const row = Database.use((db) => db.select().from(ProjectTable).where(eq(ProjectTable.id, id)).get())
+    const row = Database.use((db) => dbclient(db).select().from(ProjectTable).where(dbeq(ProjectTable.id, id)).get())
     if (!row) return undefined
     return fromRow(row)
   }
 
   export function sandboxes(id: string) {
-    const row = Database.use((db) => db.select().from(ProjectTable).where(eq(ProjectTable.id, id)).get())
+    const row = Database.use((db) => dbclient(db).select().from(ProjectTable).where(dbeq(ProjectTable.id, id)).get())
     if (!row) return []
     const data = fromRow(row)
     const valid: string[] = []
@@ -396,15 +402,15 @@ export namespace Project {
   }
 
   export function addSandbox(id: string, directory: string) {
-    const row = Database.use((db) => db.select().from(ProjectTable).where(eq(ProjectTable.id, id)).get())
+    const row = Database.use((db) => dbclient(db).select().from(ProjectTable).where(dbeq(ProjectTable.id, id)).get())
     if (!row) throw new Error(`Project not found: ${id}`)
     const updatedSandboxes = [...row.sandboxes]
     if (!updatedSandboxes.includes(directory)) updatedSandboxes.push(directory)
     const result = Database.use((db) =>
-      db
+      dbclient(db)
         .update(ProjectTable)
         .set({ sandboxes: updatedSandboxes, time_updated: Date.now() })
-        .where(eq(ProjectTable.id, id))
+        .where(dbeq(ProjectTable.id, id))
         .returning()
         .get(),
     )
@@ -420,14 +426,14 @@ export namespace Project {
   }
 
   export function removeSandbox(id: string, directory: string) {
-    const row = Database.use((db) => db.select().from(ProjectTable).where(eq(ProjectTable.id, id)).get())
+    const row = Database.use((db) => dbclient(db).select().from(ProjectTable).where(dbeq(ProjectTable.id, id)).get())
     if (!row) throw new Error(`Project not found: ${id}`)
-    const updatedSandboxes = row.sandboxes.filter((s) => s !== directory)
+    const updatedSandboxes = row.sandboxes.filter((s: string) => s !== directory)
     const result = Database.use((db) =>
-      db
+      dbclient(db)
         .update(ProjectTable)
         .set({ sandboxes: updatedSandboxes, time_updated: Date.now() })
-        .where(eq(ProjectTable.id, id))
+        .where(dbeq(ProjectTable.id, id))
         .returning()
         .get(),
     )
@@ -441,4 +447,21 @@ export namespace Project {
     })
     return data
   }
+
+  export interface Interface {
+    readonly fromDirectory: (directory: string) => Effect.Effect<{ project: Info; sandbox: string }, Error, never>
+    readonly discover: (input: Info) => Effect.Effect<void, Error, never>
+  }
+
+  export class Service extends ServiceMap.Service<Service, Interface>()("@opencode/Project") {}
+
+  export const layer = Layer.effect(
+    Service,
+    Effect.gen(function* () {
+      return Service.of({
+        fromDirectory: (directory: string) => Effect.tryPromise(() => fromDirectory(directory)),
+        discover: (input: Info) => Effect.tryPromise(() => discover(input)),
+      })
+    }),
+  )
 }

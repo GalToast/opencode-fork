@@ -61,9 +61,10 @@ export const EventRoutes = () =>
           log.info("event disconnected")
         }
 
-        const unsub = Bus.subscribeAll((event) => {
+        const unsub = Bus.subscribeAll((event: unknown) => {
           q.push(JSON.stringify(event))
-          if (event.type === Bus.InstanceDisposed.type) {
+          const busEvent = event as { type?: string }
+          if (busEvent.type === Bus.InstanceDisposed.type) {
             stop()
           }
         })

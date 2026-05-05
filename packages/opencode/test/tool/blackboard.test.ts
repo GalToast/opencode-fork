@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test"
 import { Instance } from "../../src/project/instance"
 import { Session } from "../../src/session"
+import { MessageID } from "../../src/session/schema"
 import { HarnessBlackboard } from "../../src/harness/blackboard"
 import { tmpdir } from "../fixture/fixture"
 import {
@@ -14,7 +15,7 @@ import {
 } from "../../src/tool/blackboard"
 
 const baseCtx = {
-  messageID: "",
+  messageID: MessageID.make("message_test"),
   callID: "",
   agent: "build",
   abort: AbortSignal.any([]),

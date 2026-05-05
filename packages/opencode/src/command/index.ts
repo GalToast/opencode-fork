@@ -187,7 +187,7 @@ export namespace Command {
     Layer.provide(Skill.defaultLayer),
   )
 
-  const { runPromise } = makeRuntime(Service, defaultLayer)
+  const { runPromise } = makeRuntime(Service, defaultLayer as Layer.Layer<Service, never>)
 
   export async function list() {
     return runPromise((svc) => svc.list())

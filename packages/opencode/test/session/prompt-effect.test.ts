@@ -110,26 +110,15 @@ const mcp = Layer.succeed(
 const lsp = Layer.succeed(
   LSP.Service,
   LSP.Service.of({
-    init: () => Effect.void,
-    status: () => Effect.succeed([]),
-    hasClients: () => Effect.succeed(false),
     touchFile: () => Effect.void,
-    diagnostics: () => Effect.succeed({}),
-    hover: () => Effect.succeed(undefined),
-    definition: () => Effect.succeed([]),
-    references: () => Effect.succeed([]),
-    implementation: () => Effect.succeed([]),
     documentSymbol: () => Effect.succeed([]),
-    workspaceSymbol: () => Effect.succeed([]),
-    prepareCallHierarchy: () => Effect.succeed([]),
-    incomingCalls: () => Effect.succeed([]),
-    outgoingCalls: () => Effect.succeed([]),
   }),
 )
 
 const filetime = Layer.succeed(
   FileTime.Service,
   FileTime.Service.of({
+    state: () => Effect.succeed({ readTimes: {}, locks: new Map() }),
     read: () => Effect.void,
     get: () => Effect.succeed(undefined),
     assert: () => Effect.void,
@@ -746,7 +735,7 @@ it.live(
               task_id: z.string().optional(),
               command: z.string().optional(),
             }),
-            execute: async (_args, ctx) => {
+            execute: async (_args: any, ctx: any) => {
               ready.resolve()
               ctx.abort.addEventListener("abort", () => aborted.resolve(), { once: true })
               await new Promise<void>(() => {})
@@ -759,7 +748,7 @@ it.live(
                 output: "",
               }
             },
-          }))
+          }) as any)
           yield* Effect.addFinalizer(() => Effect.sync(() => init.mockRestore()))
 
           const { prompt, chat } = yield* boot()

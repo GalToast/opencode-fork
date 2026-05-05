@@ -154,12 +154,14 @@ export function DialogModel(props: { providerID?: string }) {
       return
     }
     if (list.length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       dialog.replace(() => <DialogVariant />)
       return
     }
     dialog.clear()
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
   return (
     <DialogSelect<ReturnType<typeof options>[number]["value"]>
       options={options()}
@@ -168,7 +170,10 @@ export function DialogModel(props: { providerID?: string }) {
           keybind: keybind.all.model_provider_list?.[0],
           title: connected() ? "Connect provider" : "View all providers",
           onTrigger() {
-            dialog.replace(() => <DialogProvider />)
+            dialog.replace(() => {
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+              return <DialogProvider />
+            })
           },
         },
         {

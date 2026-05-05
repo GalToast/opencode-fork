@@ -14,6 +14,7 @@ export namespace RetrievalBaton {
     limit?: number
     preferredSessionIDs?: string[]
     mode?: "prompt_recall" | "default"
+    currentSourceID?: string
   }): RetrievalChunkCandidate[] {
     const candidates = input.candidates ?? []
     const mode = input.mode ?? "default"

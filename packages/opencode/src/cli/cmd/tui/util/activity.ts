@@ -1,4 +1,4 @@
-import type { Message, Part } from "@opencode-ai/sdk/v2"
+import type { Part } from "@opencode-ai/sdk/v2"
 import type { SessionState } from "../component/status-indicator"
 import { hasPendingAssistantMessage } from "./steering"
 

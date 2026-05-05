@@ -1,5 +1,4 @@
-import { describe, test, expect, beforeAll, afterAll } from "bun:test"
-import { Effect } from "effect"
+import { afterEach, beforeAll, describe, expect, test } from "bun:test"
 import { Discovery } from "../../src/skill/discovery"
 import { Global } from "../../src/global"
 import { Filesystem } from "../../src/util/filesystem"
@@ -41,14 +40,13 @@ beforeAll(async () => {
   CLOUDFLARE_SKILLS_URL = `http://localhost:${server.port}/.well-known/skills/`
 })
 
-afterAll(async () => {
+afterEach(async () => {
   server?.stop()
   await rm(cacheDir, { recursive: true, force: true })
 })
 
 describe("Discovery.pull", () => {
-  const pull = (url: string) =>
-    Effect.runPromise(Discovery.Service.use((s) => s.pull(url)).pipe(Effect.provide(Discovery.defaultLayer)))
+  const pull = (url: string) => Discovery.pull(url)
 
   test("downloads skills from cloudflare url", async () => {
     const dirs = await pull(CLOUDFLARE_SKILLS_URL)

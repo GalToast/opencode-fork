@@ -27,15 +27,15 @@ describe("Session.listGlobal", () => {
     expect(ids).toContain(firstSession.id)
     expect(ids).toContain(secondSession.id)
 
-    const firstProject = Project.get(firstSession.projectID)
-    const secondProject = Project.get(secondSession.projectID)
+    const firstProject = Project.get(firstSession.projectID as string)
+    const secondProject = Project.get(secondSession.projectID as string)
 
     const firstItem = sessions.find((session) => session.id === firstSession.id)
     const secondItem = sessions.find((session) => session.id === secondSession.id)
 
-    expect(firstItem?.project?.id).toBe(firstProject?.id)
+    expect(String(firstItem?.project?.id)).toBe(String(firstProject?.id))
     expect(firstItem?.project?.worktree).toBe(firstProject?.worktree)
-    expect(secondItem?.project?.id).toBe(secondProject?.id)
+    expect(String(secondItem?.project?.id)).toBe(String(secondProject?.id))
     expect(secondItem?.project?.worktree).toBe(secondProject?.worktree)
   })
 

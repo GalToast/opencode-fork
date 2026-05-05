@@ -117,7 +117,7 @@ describe("tool.tracker", () => {
             description: "Should appear in both root and child todo views",
             type: TaskType.TASK,
           },
-          { ...baseCtx, sessionID: child.id, messageID: "msg_child", callID: "call_child" },
+          { ...baseCtx, sessionID: child.id, messageID: "msg_child" as any, callID: "call_child" },
         )
 
         const rootTodos = await Todo.get(root.id)

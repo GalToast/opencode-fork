@@ -34,7 +34,6 @@ export function DialogMcp() {
   const local = useLocal() as unknown as McpLocal
   const sync = useSync()
   const sdk = useSDK()
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const client: OpencodeClient = sdk.client
   const [, setRef] = createSignal<DialogSelectRef<unknown>>()
   const [loading, setLoading] = createSignal<string | null>(null)
@@ -97,7 +96,7 @@ export function DialogMcp() {
       title="MCPs"
       options={options()}
       keybind={keybinds()}
-      onSelect={(option) => {
+      onSelect={(_option) => {
         // Don't close on select, only on escape
       }}
     />

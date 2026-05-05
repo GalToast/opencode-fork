@@ -149,7 +149,7 @@ test("reply - does nothing for unknown requestID", async () => {
     directory: tmp.path,
     fn: async () => {
       await Question.reply({
-        requestID: QuestionID.make("que_unknown"),
+        requestID: QuestionID.make("que_unknown") as unknown as string,
         answers: [["Option 1"]],
       })
       // Should not throw
@@ -222,7 +222,7 @@ test("reject - does nothing for unknown requestID", async () => {
   await Instance.provide({
     directory: tmp.path,
     fn: async () => {
-      await Question.reject(QuestionID.make("que_unknown"))
+      await Question.reject(QuestionID.make("que_unknown") as unknown as string)
       // Should not throw
     },
   })

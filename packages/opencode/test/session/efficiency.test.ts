@@ -1,6 +1,11 @@
 import { describe, expect, test } from "bun:test"
-import { Session } from "../../src/session"
-import { historyProfileBuckets, promptEconomics, promptProfile, usablePromptBudget } from "../../src/session/efficiency"
+import {
+  historyProfileBuckets,
+  promptEconomics,
+  promptFootprint,
+  promptProfile,
+  usablePromptBudget,
+} from "../../src/session/efficiency"
 
 describe("session.promptEconomics", () => {
   test("matches prompt footprint accounting and classifies an 80% reusable prompt as extreme savings", () => {
@@ -14,7 +19,7 @@ describe("session.promptEconomics", () => {
 
     const result = promptEconomics(tokens, 200_000)
 
-    expect(result.promptFootprint).toBe(Session.promptTokenFootprint(tokens))
+    expect(result.promptFootprint).toBe(promptFootprint(tokens))
     expect(result.cacheableTokens).toBe(136_000)
     expect(result.volatileTokens).toBe(34_000)
     expect(result.cacheableShare).toBeCloseTo(0.8, 6)

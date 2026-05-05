@@ -11,12 +11,24 @@ import type ParcelWatcher from "@parcel/watcher"
 import { $ } from "bun"
 import { Flag } from "@/flag/flag"
 import { readdir } from "fs/promises"
+import { Effect, Layer, ServiceMap } from "effect"
 
 const SUBSCRIBE_TIMEOUT_MS = 10_000
 
 declare const OPENCODE_LIBC: string | undefined
 
-export const FileWatcher = (() => {
+function hasNativeBinding(): boolean {
+  try {
+    const name = `@parcel/watcher-${process.platform}-${process.arch}${process.platform === "linux" ? `-${OPENCODE_LIBC || "glibc"}` : ""}`
+    require.resolve(name)
+    return true
+  } catch {
+    return false
+  }
+}
+
+// IIFE implementation
+const FileWatcherImpl = (() => {
   const log = Log.create({ service: "file.watcher" })
 
   const Event = {
@@ -124,3 +136,25 @@ export const FileWatcher = (() => {
 
   return { Event, init }
 })()
+
+// Combined export merging namespace (Service, layer, hasNativeBinding) with IIFE (Event, init)
+interface FileWatcherInterface {
+  readonly init: () => Effect.Effect<void>
+}
+
+class FileWatcherService extends ServiceMap.Service<FileWatcherService, FileWatcherInterface>()("@opencode/FileWatcher") {}
+
+const layer = Layer.effect(
+  FileWatcherService,
+  Effect.gen(function* () {
+    return FileWatcherService.of({
+      init: () => Effect.sync(() => FileWatcherImpl.init()),
+    })
+  }),
+)
+
+export const FileWatcher = Object.assign(FileWatcherImpl, {
+  hasNativeBinding,
+  Service: FileWatcherService,
+  layer,
+})

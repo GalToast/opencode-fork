@@ -9,11 +9,11 @@ type WorkerEventClient = {
 type GlobalBusSource = {
   on: (
     event: "event",
-    callback: (entry: { directory?: string; payload: any }) => void,
+    callback: (entry: { directory?: string; payload: unknown }) => void,
   ) => void
   off: (
     event: "event",
-    callback: (entry: { directory?: string; payload: any }) => void,
+    callback: (entry: { directory?: string; payload: unknown }) => void,
   ) => void
 }
 

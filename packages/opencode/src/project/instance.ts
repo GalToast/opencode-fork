@@ -126,7 +126,7 @@ export const Instance = {
    * Use this to bridge from Effect (where InstanceRef carries context)
    * back to sync code that reads Instance.directory from ALS.
    */
-  restore<R>(ctx: InstanceContext, fn: () => R): R {
+  restore<R>(ctx: InstanceContext, fn: () => R | Promise<R>): R | Promise<R> {
     return context.provide(ctx, fn)
   },
   state<S>(init: () => S, dispose?: (state: Awaited<S>) => Promise<void>): () => S {

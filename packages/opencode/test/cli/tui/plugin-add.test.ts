@@ -5,6 +5,7 @@ import { pathToFileURL } from "url"
 import { tmpdir } from "../../fixture/fixture"
 import { createTuiPluginApi } from "../../fixture/tui-plugin"
 import { TuiConfig } from "../../../src/config/tui"
+import { Config } from "../../../src/config/config"
 
 const { TuiPluginRuntime } = await import("../../../src/cli/cmd/tui/plugin/runtime")
 
@@ -33,9 +34,9 @@ test("adds tui plugin at runtime from spec", async () => {
   process.env.OPENCODE_PLUGIN_META_FILE = path.join(tmp.path, "plugin-meta.json")
   const get = spyOn(TuiConfig, "get").mockResolvedValue({
     plugin: [],
-    plugin_origins: undefined,
   })
-  const wait = spyOn(TuiConfig, "waitForDependencies").mockResolvedValue()
+  const getGlobal = spyOn(Config, "get").mockResolvedValue({} as Config.Info)
+  const wait = spyOn(Config, "waitForDependencies").mockResolvedValue(undefined)
   const cwd = spyOn(process, "cwd").mockImplementation(() => tmp.path)
 
   try {
@@ -55,6 +56,7 @@ test("adds tui plugin at runtime from spec", async () => {
     await TuiPluginRuntime.dispose()
     cwd.mockRestore()
     get.mockRestore()
+    getGlobal.mockRestore()
     wait.mockRestore()
     delete process.env.OPENCODE_PLUGIN_META_FILE
   }
@@ -74,9 +76,9 @@ test("retries runtime add for file plugins after dependency wait", async () => {
   process.env.OPENCODE_PLUGIN_META_FILE = path.join(tmp.path, "plugin-meta.json")
   const get = spyOn(TuiConfig, "get").mockResolvedValue({
     plugin: [],
-    plugin_origins: undefined,
   })
-  const wait = spyOn(TuiConfig, "waitForDependencies").mockImplementation(async () => {
+  const getGlobal = spyOn(Config, "get").mockResolvedValue({} as Config.Info)
+  const wait = spyOn(Config, "waitForDependencies").mockImplementation(async () => {
     await Bun.write(
       path.join(tmp.extra.mod, "index.ts"),
       `export default {
@@ -101,6 +103,7 @@ test("retries runtime add for file plugins after dependency wait", async () => {
     await TuiPluginRuntime.dispose()
     cwd.mockRestore()
     get.mockRestore()
+    getGlobal.mockRestore()
     wait.mockRestore()
     delete process.env.OPENCODE_PLUGIN_META_FILE
   }

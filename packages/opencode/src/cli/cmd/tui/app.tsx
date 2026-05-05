@@ -1,7 +1,7 @@
 import { render, TimeToFirstDraw, useKeyboard, useRenderer, useTerminalDimensions } from "@opentui/solid"
 import { Clipboard } from "@tui/util/clipboard"
 import { Selection } from "@tui/util/selection"
-import { createCliRenderer, MouseButton, type CliRendererConfig, type MouseEvent } from "@opentui/core"
+import { createCliRenderer, MouseButton, type CliRendererConfig } from "@opentui/core"
 import { RouteProvider, useRoute } from "@tui/context/route"
 import {
   Switch,
@@ -55,10 +55,9 @@ import { Provider } from "@/provider/provider"
 import { ArgsProvider, useArgs, type Args } from "./context/args"
 import open from "open"
 import { appendFileSync } from "fs"
-import { writeHeapSnapshot } from "v8"
 import { PromptRefProvider, usePromptRef } from "./context/prompt"
 import { TuiConfigProvider, useTuiConfig } from "./context/tui-config"
-import { TuiConfig } from "@/config/tui"
+import type { TuiConfig } from "@/config/tui"
 import { createTuiApi, TuiPluginRuntime, type RouteMap } from "./plugin"
 import { FormatError, FormatUnknownError } from "@/cli/error"
 
@@ -76,15 +75,9 @@ async function getTerminalBackgroundColor(): Promise<"dark" | "light"> {
   if (!process.stdin.isTTY) return "dark"
 
   return new Promise((resolve) => {
-    let timeout: NodeJS.Timeout
+    let cleanup = () => {}
 
-    const cleanup = () => {
-      process.stdin.setRawMode(false)
-      process.stdin.removeListener("data", handler)
-      clearTimeout(timeout)
-    }
-
-    const handler = (data: Buffer) => {
+    function handler(data: Buffer) {
       const str = data.toString()
       const match = str.match(/\x1b]11;([^\x07\x1b]+)/)
       if (match) {
@@ -120,14 +113,20 @@ async function getTerminalBackgroundColor(): Promise<"dark" | "light"> {
       }
     }
 
-    process.stdin.setRawMode(true)
-    process.stdin.on("data", handler)
-    process.stdout.write("\x1b]11;?\x07")
-
-    timeout = setTimeout(() => {
+    const timeout = setTimeout(() => {
       cleanup()
       resolve("dark")
     }, 1000)
+
+    cleanup = () => {
+      process.stdin.setRawMode(false)
+      process.stdin.removeListener("data", handler)
+      clearTimeout(timeout)
+    }
+
+    process.stdin.setRawMode(true)
+    process.stdin.on("data", handler)
+    process.stdout.write("\x1b]11;?\x07")
   })
 }
 
@@ -200,35 +199,39 @@ export function tui(input: {
   events?: EventSource
 }) {
   // promise to prevent immediate exit
-  return new Promise<void>(async (resolve) => {
+  return new Promise<void>((resolve, reject) => {
     bootTrace("tui:start")
     const unguard = win32InstallCtrlCGuard()
     win32DisableProcessedInput()
 
-    bootTrace("tui:background:start")
-    const mode = await getTerminalBackgroundColor()
-    bootTrace(`tui:background:done:${mode}`)
+    void (async () => {
+      bootTrace("tui:background:start")
+      const mode = await getTerminalBackgroundColor()
+      bootTrace(`tui:background:done:${mode}`)
 
-    // Re-clear after getTerminalBackgroundColor() — setRawMode(false) restores
-    // the original console mode which re-enables ENABLE_PROCESSED_INPUT.
-    win32DisableProcessedInput()
+      // Re-clear after getTerminalBackgroundColor() — setRawMode(false) restores
+      // the original console mode which re-enables ENABLE_PROCESSED_INPUT.
+      win32DisableProcessedInput()
 
-    const onExit = async () => {
-      unguard?.()
-      resolve()
-    }
+      const onExit = () => {
+        unguard?.()
+        resolve()
+        return Promise.resolve()
+      }
 
-    const onBeforeExit = async () => {
-      await TuiPluginRuntime.dispose()
-    }
+      const onBeforeExit = async () => {
+        await TuiPluginRuntime.dispose()
+      }
 
-    bootTrace("tui:renderer:create:start")
-    const renderer = await createCliRenderer(rendererConfig(input.config))
-    bootTrace("tui:renderer:create:done")
+      bootTrace("tui:renderer:create:start")
+      const renderer = await createCliRenderer(rendererConfig(input.config))
+      bootTrace("tui:renderer:create:done")
 
-    bootTrace("tui:render:start")
-    await render(() => {
-      const body = (
+      bootTrace("tui:render:start")
+      /* eslint-disable @typescript-eslint/no-unsafe-return */
+      await render(() => {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- JSX.Element is effectively `any` in OpenTUI/Solid.
+        const body = (
           <ArgsProvider {...input.args}>
             <ExitProvider onBeforeExit={onBeforeExit} onExit={onExit}>
               <KVProvider>
@@ -270,24 +273,31 @@ export function tui(input: {
               </KVProvider>
             </ExitProvider>
           </ArgsProvider>
-      )
-      if (process.env["OPENCODE_TUI_BYPASS_ERROR_BOUNDARY"] === "1") return body
-      return (
-        <ErrorBoundary
-          fallback={(error, reset) => (
-            <ErrorComponent error={error} reset={reset} onBeforeExit={onBeforeExit} onExit={onExit} mode={mode} />
-          )}
-        >
-          {body}
-        </ErrorBoundary>
-      )
-    }, renderer)
-    bootTrace("tui:render:done")
-    renderer.requestRender()
-    bootTrace("tui:render:requested")
+        )
+        if (process.env["OPENCODE_TUI_BYPASS_ERROR_BOUNDARY"] === "1") return body
+        return (
+          <ErrorBoundary
+            fallback={(error, reset) => (
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- JSX.Element is effectively `any` in OpenTUI/Solid.
+              <ErrorComponent error={error} reset={reset} onBeforeExit={onBeforeExit} onExit={onExit} mode={mode} />
+            )}
+          >
+            {body}
+          </ErrorBoundary>
+        )
+      }, renderer)
+      /* eslint-enable @typescript-eslint/no-unsafe-return */
+      bootTrace("tui:render:done")
+      renderer.requestRender()
+      bootTrace("tui:render:requested")
+    })().catch((error: unknown) => {
+      unguard?.()
+      reject(error instanceof Error ? error : new Error(FormatUnknownError(error)))
+    })
   })
 }
 
+/* eslint-disable @typescript-eslint/no-unsafe-return */
 function App(props: { onSnapshot?: () => Promise<string[]> }) {
   bootTrace("app:start")
   const tuiConfig = useTuiConfig()
@@ -302,7 +312,7 @@ function App(props: { onSnapshot?: () => Promise<string[]> }) {
   const sdk = useSDK()
   const toast = useToast()
   const themeState = useTheme()
-  const { theme, mode, setMode, locked, lock, unlock } = themeState
+  const theme = themeState.theme
   const sync = useSync()
   const exit = useExit()
   const promptRef = usePromptRef()
@@ -382,14 +392,13 @@ function App(props: { onSnapshot?: () => Promise<string[]> }) {
   })
 
   // Wire up console copy-to-clipboard via opentui's onCopySelection callback
-  renderer.console.onCopySelection = async (text: string) => {
+  renderer.console.onCopySelection = (text: string) => {
     if (!text || text.length === 0) return
 
-    await Clipboard.copy(text)
+    void Clipboard.copy(text)
       .then(() => toast.show({ message: "Copied to clipboard", variant: "info" }))
       .catch(toast.error)
-
-    renderer.clearSelection()
+      .finally(() => renderer.clearSelection())
   }
   const [terminalTitleEnabled, setTerminalTitleEnabled] = createSignal(kv.get("terminal_title_enabled", true))
 
@@ -459,7 +468,7 @@ function App(props: { onSnapshot?: () => Promise<string[]> }) {
           } else {
             toast.show({ message: "Failed to fork session", variant: "error" })
           }
-        })
+        }).catch(() => {})
       } else {
         route.navigate({ type: "session", sessionID: match })
       }
@@ -479,7 +488,7 @@ function App(props: { onSnapshot?: () => Promise<string[]> }) {
       } else {
         toast.show({ message: "Failed to fork session", variant: "error" })
       }
-    })
+    }).catch(() => {})
   })
 
   createEffect(
@@ -722,19 +731,19 @@ function App(props: { onSnapshot?: () => Promise<string[]> }) {
     {
       title: "Toggle Theme Mode",
       value: "theme.switch_mode",
-      onSelect: (dialog) => {
-        setMode(mode() === "dark" ? "light" : "dark")
-        dialog.clear()
+      onSelect: (dlg) => {
+        themeState.setMode(themeState.mode() === "dark" ? "light" : "dark")
+        dlg.clear()
       },
       category: "System",
     },
     {
-      title: locked() ? "Unlock Theme Mode" : "Lock Theme Mode",
+      title: themeState.locked() ? "Unlock Theme Mode" : "Lock Theme Mode",
       value: "theme.mode.lock",
-      onSelect: (dialog) => {
-        if (locked()) unlock()
-        else lock()
-        dialog.clear()
+      onSelect: (dlg) => {
+        if (themeState.locked()) themeState.unlock()
+        else themeState.lock()
+        dlg.clear()
       },
       category: "System",
     },
@@ -765,39 +774,41 @@ function App(props: { onSnapshot?: () => Promise<string[]> }) {
         name: "exit",
         aliases: ["quit", "q"],
       },
-      onSelect: () => exit(),
+      onSelect: () => { void exit() },
       category: "System",
     },
     {
       title: "Toggle debug panel",
       category: "System",
       value: "app.debug",
-      onSelect: (dialog) => {
+      onSelect: (dlg) => {
         renderer.toggleDebugOverlay()
-        dialog.clear()
+        dlg.clear()
       },
     },
     {
       title: "Toggle console",
       category: "System",
       value: "app.console",
-      onSelect: (dialog) => {
+      onSelect: (dlg) => {
         renderer.console.toggle()
-        dialog.clear()
+        dlg.clear()
       },
     },
     {
       title: "Write heap snapshot",
       category: "System",
       value: "app.heap_snapshot",
-      onSelect: async (dialog) => {
-        const files = await props.onSnapshot?.()
-        toast.show({
-          variant: "info",
-          message: `Heap snapshot written to ${files?.join(", ")}`,
-          duration: 5000,
-        })
-        dialog.clear()
+      onSelect: (dlg) => {
+        void (async () => {
+          const files = await props.onSnapshot?.()
+          toast.show({
+            variant: "info",
+            message: `Heap snapshot written to ${files?.join(", ")}`,
+            duration: 5000,
+          })
+          dlg.clear()
+        })()
       },
     },
     {
@@ -821,33 +832,33 @@ function App(props: { onSnapshot?: () => Promise<string[]> }) {
       value: "terminal.title.toggle",
       keybind: "terminal_title_toggle",
       category: "System",
-      onSelect: (dialog) => {
+      onSelect: (dlg) => {
         setTerminalTitleEnabled((prev) => {
           const next = !prev
           kv.set("terminal_title_enabled", next)
           if (!next) renderer.setTerminalTitle("")
           return next
         })
-        dialog.clear()
+        dlg.clear()
       },
     },
     {
       title: kv.get("animations_enabled", true) ? "Disable animations" : "Enable animations",
       value: "app.toggle.animations",
       category: "System",
-      onSelect: (dialog) => {
+      onSelect: (dlg) => {
         kv.set("animations_enabled", !kv.get("animations_enabled", true))
-        dialog.clear()
+        dlg.clear()
       },
     },
     {
       title: kv.get("diff_wrap_mode", "word") === "word" ? "Disable diff wrapping" : "Enable diff wrapping",
       value: "app.toggle.diffwrap",
       category: "System",
-      onSelect: (dialog) => {
+      onSelect: (dlg) => {
         const current = kv.get("diff_wrap_mode", "word")
         kv.set("diff_wrap_mode", current === "word" ? "none" : "word")
-        dialog.clear()
+        dlg.clear()
       },
     },
   ])
@@ -894,59 +905,61 @@ function App(props: { onSnapshot?: () => Promise<string[]> }) {
     })
   })
 
-  sdk.event.on("installation.update-available", async (evt) => {
-    const version = evt.properties.version
+  sdk.event.on("installation.update-available", (evt) => {
+    void (async () => {
+      const version = evt.properties.version
 
-    const skipped = kv.get("skipped_version")
-    if (skipped && !semver.gt(version, skipped)) return
+      const skipped = kv.get("skipped_version", "")
+      if (skipped && !semver.gt(version, skipped)) return
 
-    const choice = await DialogConfirm.show(
-      dialog,
-      `Update Available`,
-      `A new release v${version} is available. Would you like to update now?`,
-      "skip",
-    )
+      const choice = await DialogConfirm.show(
+        dialog,
+        `Update Available`,
+        `A new release v${version} is available. Would you like to update now?`,
+        "skip",
+      )
 
-    if (choice === false) {
-      kv.set("skipped_version", version)
-      return
-    }
+      if (choice === false) {
+        kv.set("skipped_version", version)
+        return
+      }
 
-    if (choice !== true) return
+      if (choice !== true) return
 
-    toast.show({
-      variant: "info",
-      message: `Updating to v${version}...`,
-      duration: 30000,
-    })
-
-    const result = await sdk.client.global.upgrade({ target: version })
-
-    if (result.error || !result.data?.success) {
       toast.show({
-        variant: "error",
-        title: "Update Failed",
-        message: "Update failed",
-        duration: 10000,
+        variant: "info",
+        message: `Updating to v${version}...`,
+        duration: 30000,
       })
-      return
-    }
 
-    await DialogAlert.show(
-      dialog,
-      "Update Complete",
-      `Successfully updated to OpenCode v${result.data.version}. Please restart the application.`,
-    )
+      const result = await sdk.client.global.upgrade({ target: version })
 
-    exit()
+      if (result.error || !result.data?.success) {
+        toast.show({
+          variant: "error",
+          title: "Update Failed",
+          message: "Update failed",
+          duration: 10000,
+        })
+        return
+      }
+
+      await DialogAlert.show(
+        dialog,
+        "Update Complete",
+        `Successfully updated to OpenCode v${result.data.version}. Please restart the application.`,
+      )
+
+      void exit()
+    })()
   })
 
   const plugin = createMemo(() => {
     if (!ready()) return
     if (route.data.type !== "plugin") return
-    const render = routeView(route.data.id)
-    if (!render) return <PluginRouteMissing id={route.data.id} onHome={() => route.navigate({ type: "home" })} />
-    return render({ params: route.data.data })
+    const routeRender = routeView(route.data.id)
+    if (!routeRender) return <PluginRouteMissing id={route.data.id} onHome={() => route.navigate({ type: "home" })} />
+    return routeRender({ params: route.data.data })
   })
 
   return (
@@ -956,6 +969,7 @@ function App(props: { onSnapshot?: () => Promise<string[]> }) {
       backgroundColor={theme.background}
       onMouseDown={(evt: import("@opentui/core").MouseEvent) => {
         if (!Flag.OPENCODE_EXPERIMENTAL_DISABLE_COPY_ON_SELECT) return
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
         if (evt.button !== MouseButton.RIGHT) return
 
         if (!Selection.copy(renderer, toast)) return

@@ -3,7 +3,7 @@ export function lazy<T>(fn: () => T) {
   let loaded = false
 
   const result = (): T => {
-    if (loaded) return value
+    if (loaded) return value as T
     try {
       value = fn()
       loaded = true

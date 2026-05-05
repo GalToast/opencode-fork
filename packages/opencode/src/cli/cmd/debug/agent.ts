@@ -1,17 +1,17 @@
 import { EOL } from "os"
 import vm from "node:vm"
 import { basename } from "path"
-import { Agent, type AgentInfo } from "../../../agent/agent"
+import { Agent } from "../../../agent/agent"
 import { Provider } from "../../../provider/provider"
 import { Session } from "../../../session"
 import type { MessageV2 } from "../../../session/message-v2"
-import { Identifier } from "../../../id/id"
 import { ToolRegistry } from "../../../tool/registry"
 import type { Tool } from "../../../tool/tool"
 import { Instance } from "../../../project/instance"
 import { PermissionNext } from "../../../permission/next"
 import { bootstrap } from "../../bootstrap"
 import { cmd } from "../cmd"
+import { MessageID, PartID } from "../../../session/schema"
 
 export const AgentCommand = cmd({
   command: "agent <name>",
@@ -70,12 +70,12 @@ export const AgentCommand = cmd({
   },
 })
 
-async function getAvailableTools(agent: AgentInfo) {
+async function getAvailableTools(agent: Agent.Info) {
   const model = agent.model ?? (await Provider.defaultModel())
   return ToolRegistry.tools(model, agent)
 }
 
-function resolveTools(agent: AgentInfo, availableTools: Awaited<ReturnType<typeof getAvailableTools>>) {
+function resolveTools(agent: Agent.Info, availableTools: Awaited<ReturnType<typeof getAvailableTools>>) {
   const disabled = PermissionNext.disabled(
     availableTools.map((tool) => tool.id),
     agent.permission,
@@ -115,9 +115,9 @@ function parseToolParams(input?: string) {
   return parsed as Record<string, unknown>
 }
 
-async function createToolContext(agent: AgentInfo): Promise<Tool.Context> {
+async function createToolContext(agent: Agent.Info): Promise<Tool.Context> {
   const session = await Session.create({ title: `Debug tool run (${agent.name})` })
-  const messageID = Identifier.ascending("message")
+  const messageID = MessageID.ascending()
   const model = agent.model ?? (await Provider.defaultModel())
   const now = Date.now()
   const message: MessageV2.Assistant = {
@@ -154,7 +154,7 @@ async function createToolContext(agent: AgentInfo): Promise<Tool.Context> {
   return {
     sessionID: session.id,
     messageID,
-    callID: Identifier.ascending("part"),
+    callID: PartID.ascending(),
     agent: agent.name,
     abort: new AbortController().signal,
     messages: [],

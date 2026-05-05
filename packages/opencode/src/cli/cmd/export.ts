@@ -1,5 +1,7 @@
 import type { Argv } from "yargs"
 import { Session } from "../../session"
+import { MessageV2 } from "../../session/message-v2"
+import { SessionID } from "../../session/schema"
 import { cmd } from "./cmd"
 import { bootstrap } from "../bootstrap"
 import { UI } from "../ui"
@@ -70,12 +72,12 @@ export const ExportCommand = cmd({
           throw new UI.CancelledError()
         }
 
-        const sessionInfo = Session.get(sessionID)
-        const messages = Session.messages({ sessionID })
+        const sessionInfo = await Session.get(sessionID as SessionID)
+        const messages = await Session.messages({ sessionID: sessionID as SessionID })
 
         const exportData = {
           info: sessionInfo,
-          messages: messages.map((msg) => ({
+          messages: messages.map((msg: MessageV2.WithParts) => ({
             info: msg.info,
             parts: msg.parts,
           })),

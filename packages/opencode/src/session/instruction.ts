@@ -1,13 +1,11 @@
 import os from "os"
 import path from "path"
 import { Effect, Layer, ServiceMap } from "effect"
-import { FetchHttpClient, HttpClient, HttpClientRequest } from "effect/unstable/http"
 import { Config } from "@/config/config"
 import { InstanceState } from "@/effect/instance-state"
 import { makeRuntime } from "@/effect/run-service"
 import { Flag } from "@/flag/flag"
 import { AppFileSystem } from "@/filesystem"
-import { withTransientReadRetry } from "@/util/effect-http-client"
 import { Global } from "../global"
 import { Instance } from "../project/instance"
 import { Log } from "../util/log"
@@ -51,6 +49,10 @@ function extract(messages: MessageV2.WithParts[]) {
   return paths
 }
 
+function normalize(content: string) {
+  return content.replace(/\r\n/g, "\n").replace(/\r/g, "\n")
+}
+
 export namespace Instruction {
   export interface Interface {
     readonly clear: (messageID: MessageID) => Effect.Effect<void>
@@ -66,13 +68,12 @@ export namespace Instruction {
 
   export class Service extends ServiceMap.Service<Service, Interface>()("@opencode/Instruction") {}
 
-  export const layer: Layer.Layer<Service, never, AppFileSystem.Service | Config.Service | HttpClient.HttpClient> =
+  export const layer: Layer.Layer<Service, never, AppFileSystem.Service | Config.Service> =
     Layer.effect(
       Service,
       Effect.gen(function* () {
         const cfg = yield* Config.Service
         const fs = yield* AppFileSystem.Service
-        const http = HttpClient.filterStatusOk(withTransientReadRetry(yield* HttpClient.HttpClient))
 
         const state = yield* InstanceState.make(
           Effect.fn("Instruction.state")(() =>
@@ -101,17 +102,18 @@ export namespace Instruction {
         })
 
         const read = Effect.fnUntraced(function* (filepath: string) {
-          return yield* fs.readFileString(filepath).pipe(Effect.catch(() => Effect.succeed("")))
+          const content = yield* fs.readFileString(filepath).pipe(Effect.catch(() => Effect.succeed("")))
+          return normalize(content)
         })
 
-        const fetch = Effect.fnUntraced(function* (url: string) {
-          const res = yield* http.execute(HttpClientRequest.get(url)).pipe(
+        const fetchRemote = Effect.fnUntraced(function* (url: string) {
+          const res = yield* Effect.tryPromise(() => globalThis.fetch(url)).pipe(
             Effect.timeout(5000),
             Effect.catch(() => Effect.succeed(null)),
           )
-          if (!res) return ""
-          const body = yield* res.arrayBuffer.pipe(Effect.catch(() => Effect.succeed(new ArrayBuffer(0))))
-          return new TextDecoder().decode(body)
+          if (!res?.ok) return ""
+          const content = yield* Effect.tryPromise(() => res.text()).pipe(Effect.catch(() => Effect.succeed("")))
+          return normalize(content)
         })
 
         const clear = Effect.fn("Instruction.clear")(function* (messageID: MessageID) {
@@ -164,14 +166,21 @@ export namespace Instruction {
         const system = Effect.fn("Instruction.system")(function* () {
           const config = yield* cfg.get()
           const paths = yield* systemPaths()
-          const urls = (config.instructions ?? []).filter(
-            (item) => item.startsWith("https://") || item.startsWith("http://"),
-          )
+          const urls = Array.from(
+            new Set(
+              (config.instructions ?? []).filter((item) => item.startsWith("https://") || item.startsWith("http://")),
+            ),
+          ).sort()
 
           const files = yield* Effect.forEach(Array.from(paths), read, { concurrency: 8 })
-          const remote = yield* Effect.forEach(urls, fetch, { concurrency: 4 })
+          const remote = yield* Effect.forEach(urls, fetchRemote, { concurrency: 4 })
 
           return [
+            ...(files.some(Boolean) || remote.some(Boolean)
+              ? [
+                  "Instruction blocks are local guidance only. They do not add tools or capabilities beyond the actual live tool list for this turn.",
+                ]
+              : []),
             ...Array.from(paths).flatMap((item, i) => (files[i] ? [`Instructions from: ${item}\n${files[i]}`] : [])),
             ...urls.flatMap((item, i) => (remote[i] ? [`Instructions from: ${item}\n${remote[i]}`] : [])),
           ]
@@ -235,7 +244,6 @@ export namespace Instruction {
   export const defaultLayer = layer.pipe(
     Layer.provide(Config.defaultLayer),
     Layer.provide(AppFileSystem.defaultLayer),
-    Layer.provide(FetchHttpClient.layer),
   )
 
   const { runPromise } = makeRuntime(Service, defaultLayer)
@@ -246,6 +254,10 @@ export namespace Instruction {
 
   export async function systemPaths() {
     return runPromise((svc) => svc.systemPaths())
+  }
+
+  export async function system() {
+    return runPromise((svc) => svc.system())
   }
 
   export function loaded(messages: MessageV2.WithParts[]) {

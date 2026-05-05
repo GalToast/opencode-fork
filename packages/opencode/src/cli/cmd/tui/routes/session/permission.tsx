@@ -48,7 +48,7 @@ function filetype(input?: string) {
   return language
 }
 
-function EditBody(props: { request: PermissionRequest }) {
+function EditBody(props: { request: PermissionRequest }): JSX.Element {
   const themeState = useTheme()
   const theme = themeState.theme
   const syntax = themeState.syntax
@@ -110,7 +110,7 @@ function EditBody(props: { request: PermissionRequest }) {
   )
 }
 
-function TextBody(props: { title: string; description?: string; icon?: string }) {
+function TextBody(props: { title: string; description?: string; icon?: string }): JSX.Element {
   const { theme } = useTheme()
   return (
     <>
@@ -131,7 +131,7 @@ function TextBody(props: { title: string; description?: string; icon?: string })
   )
 }
 
-export function PermissionPrompt(props: { request: PermissionRequest }) {
+export function PermissionPrompt(props: { request: PermissionRequest }): JSX.Element {
   const sdk = useSDK()
   const sync = useSync()
   const toast = useToast()
@@ -142,13 +142,13 @@ export function PermissionPrompt(props: { request: PermissionRequest }) {
 
   const session = createMemo(() => sync.data.session.find((s) => s.id === props.request.sessionID))
 
-  const input = createMemo(() => {
+  const input = createMemo((): Record<string, unknown> => {
     const tool = props.request.tool
     if (!tool) return {}
     const parts = sync.data.part[tool.messageID] ?? []
     for (const part of parts) {
       if (part.type === "tool" && part.callID === tool.callID && part.state.status !== "pending") {
-        return part.state.input ?? {}
+        return (part.state.input ?? {}) as Record<string, unknown>
       }
     }
     return {}
@@ -156,22 +156,22 @@ export function PermissionPrompt(props: { request: PermissionRequest }) {
 
   const { theme } = useTheme()
 
-  async function reply(input: { reply: "once" | "always" | "reject"; message?: string }) {
+  async function reply(replyInput: { reply: "once" | "always" | "reject"; message?: string }) {
     if (store.submitting) return
     setStore("submitting", true)
     try {
       const result = await sdk.client.permission.reply(
         {
-          reply: input.reply,
+          reply: replyInput.reply,
           requestID: props.request.id,
-          message: input.message,
+          message: replyInput.message,
         },
         { throwOnError: true },
       )
       if (result.data !== true) {
         Log.Default.warn("permission reply did not match pending request", {
           requestID: props.request.id,
-          reply: input.reply,
+          reply: replyInput.reply,
         })
         toast.show({ message: "Permission reply was not accepted", variant: "error" })
         setStore("stage", "permission")
@@ -181,7 +181,7 @@ export function PermissionPrompt(props: { request: PermissionRequest }) {
       const message = error instanceof Error ? error.message : String(error)
       Log.Default.error("permission reply failed", {
         requestID: props.request.id,
-        reply: input.reply,
+        reply: replyInput.reply,
         error: message,
       })
       toast.show({ message: "Permission reply failed", variant: "error" })
@@ -197,26 +197,34 @@ export function PermissionPrompt(props: { request: PermissionRequest }) {
         <Prompt
           title="Always allow"
           body={
-            <Switch>
-              <Match when={props.request.always.length === 1 && props.request.always[0] === "*"}>
-                <TextBody title={"This will allow " + props.request.permission + " until OpenCode is restarted."} />
-              </Match>
-              <Match when={true}>
-                <box paddingLeft={1} gap={1}>
-                  <text fg={theme.textMuted}>This will allow the following patterns until OpenCode is restarted</text>
-                  <box>
-                    <For each={props.request.always}>
-                      {(pattern) => (
-                        <text fg={theme.text}>
-                          {"- "}
-                          {pattern}
-                        </text>
-                      )}
-                    </For>
-                  </box>
-                </box>
-              </Match>
-            </Switch>
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            (() => {
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+              const bodyContent: JSX.Element = (
+                <Switch>
+                  <Match when={props.request.always.length === 1 && props.request.always[0] === "*"}>
+                    <TextBody title={"This will allow " + props.request.permission + " until OpenCode is restarted."} />
+                  </Match>
+                  <Match when={true}>
+                    <box paddingLeft={1} gap={1}>
+                      <text fg={theme.textMuted}>This will allow the following patterns until OpenCode is restarted</text>
+                      <box>
+                        <For each={props.request.always}>
+                          {(pattern: string): JSX.Element => (
+                            <text fg={theme.text}>
+                              {"- "}
+                              {pattern}
+                            </text>
+                          )}
+                        </For>
+                      </box>
+                    </box>
+                  </Match>
+                </Switch>
+              )
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+              return bodyContent
+            })()
           }
           options={{ confirm: "Confirm", cancel: "Cancel" }}
           escapeKey="cancel"
@@ -241,232 +249,232 @@ export function PermissionPrompt(props: { request: PermissionRequest }) {
       </Match>
       <Match when={store.stage === "permission"}>
         {(() => {
-          const info = () => {
+          interface PermissionInfo {
+            icon: string
+            title: string
+            body: JSX.Element
+          }
+          const pinfo = (
+            icon: string,
+            title: string,
+            b: JSX.Element,
+          ): PermissionInfo => ({
+            icon,
+            title,
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- JSX.Element is any in this project.
+            body: b,
+          })
+
+          const info = (): PermissionInfo => {
             const permission = props.request.permission
-            const data = input()
+            const data = input() as Record<string, string | undefined>
+            const metaStr = (key: string): string | undefined => {
+              const v = (props.request.metadata as Record<string, unknown> | undefined)?.[key]
+              return typeof v === "string" ? v : undefined
+            }
 
             if (permission === "edit") {
-              const raw = props.request.metadata?.filepath
-              const filepath = typeof raw === "string" ? raw : ""
-              return {
-                icon: "→",
-                title: `Edit ${normalizePath(filepath)}`,
-                body: <EditBody request={props.request} />,
-              }
+              const filepath = metaStr("filepath") ?? ""
+              return pinfo("→", `Edit ${normalizePath(filepath)}`, <EditBody request={props.request} />)
             }
 
             if (permission === "read") {
-              const raw = data.filePath
-              const filePath = typeof raw === "string" ? raw : ""
-              return {
-                icon: "→",
-                title: `Read ${normalizePath(filePath)}`,
-                body: (
-                  <Show when={filePath}>
-                    <box paddingLeft={1}>
-                      <text fg={theme.textMuted}>{"Path: " + normalizePath(filePath)}</text>
-                    </box>
-                  </Show>
-                ),
-              }
+              const filePath = data.filePath ?? ""
+              return pinfo(
+                "→",
+                `Read ${normalizePath(filePath)}`,
+                <Show when={filePath}>
+                  <box paddingLeft={1}>
+                    <text fg={theme.textMuted}>{"Path: " + normalizePath(filePath)}</text>
+                  </box>
+                </Show>,
+              )
             }
 
             if (permission === "glob") {
-              const pattern = typeof data.pattern === "string" ? data.pattern : ""
-              return {
-                icon: "✱",
-                title: `Glob "${pattern}"`,
-                body: (
-                  <Show when={pattern}>
-                    <box paddingLeft={1}>
-                      <text fg={theme.textMuted}>{"Pattern: " + pattern}</text>
-                    </box>
-                  </Show>
-                ),
-              }
+              const pattern = data.pattern ?? ""
+              return pinfo(
+                "✱",
+                `Glob "${pattern}"`,
+                <Show when={pattern}>
+                  <box paddingLeft={1}>
+                    <text fg={theme.textMuted}>{"Pattern: " + pattern}</text>
+                  </box>
+                </Show>,
+              )
             }
 
             if (permission === "grep") {
-              const pattern = typeof data.pattern === "string" ? data.pattern : ""
-              return {
-                icon: "✱",
-                title: `Grep "${pattern}"`,
-                body: (
-                  <Show when={pattern}>
-                    <box paddingLeft={1}>
-                      <text fg={theme.textMuted}>{"Pattern: " + pattern}</text>
-                    </box>
-                  </Show>
-                ),
-              }
+              const pattern = data.pattern ?? ""
+              return pinfo(
+                "✱",
+                `Grep "${pattern}"`,
+                <Show when={pattern}>
+                  <box paddingLeft={1}>
+                    <text fg={theme.textMuted}>{"Pattern: " + pattern}</text>
+                  </box>
+                </Show>,
+              )
             }
 
             if (permission === "list") {
-              const raw = data.path
-              const dir = typeof raw === "string" ? raw : ""
-              return {
-                icon: "→",
-                title: `List ${normalizePath(dir)}`,
-                body: (
-                  <Show when={dir}>
-                    <box paddingLeft={1}>
-                      <text fg={theme.textMuted}>{"Path: " + normalizePath(dir)}</text>
-                    </box>
-                  </Show>
-                ),
-              }
+              const dir = data.path ?? ""
+              return pinfo(
+                "→",
+                `List ${normalizePath(dir)}`,
+                <Show when={dir}>
+                  <box paddingLeft={1}>
+                    <text fg={theme.textMuted}>{"Path: " + normalizePath(dir)}</text>
+                  </box>
+                </Show>,
+              )
             }
 
             if (permission === "bash") {
-              const title =
-                typeof data.description === "string" && data.description ? data.description : "Shell command"
-              const command = typeof data.command === "string" ? data.command : ""
-              return {
-                icon: "#",
+              const title = data.description ?? "Shell command"
+              const command = data.command ?? ""
+              return pinfo(
+                "#",
                 title,
-                body: (
-                  <Show when={command}>
-                    <box paddingLeft={1}>
-                      <text fg={theme.text}>{"$ " + command}</text>
-                    </box>
-                  </Show>
-                ),
-              }
+                <Show when={command}>
+                  <box paddingLeft={1}>
+                    <text fg={theme.text}>{"$ " + command}</text>
+                  </box>
+                </Show>,
+              )
             }
 
             if (permission === "task") {
-              const type = typeof data.subagent_type === "string" ? data.subagent_type : "Unknown"
-              const desc = typeof data.description === "string" ? data.description : ""
-              return {
-                icon: "#",
-                title: `${Locale.titlecase(type)} Task`,
-                body: (
-                  <Show when={desc}>
-                    <box paddingLeft={1}>
-                      <text fg={theme.text}>{"◉ " + desc}</text>
-                    </box>
-                  </Show>
-                ),
-              }
+              const type = data.subagent_type ?? "Unknown"
+              const desc = data.description ?? ""
+              return pinfo(
+                "#",
+                `${Locale.titlecase(type)} Task`,
+                <Show when={desc}>
+                  <box paddingLeft={1}>
+                    <text fg={theme.text}>{"◉ " + desc}</text>
+                  </box>
+                </Show>,
+              )
             }
 
             if (permission === "webfetch") {
-              const url = typeof data.url === "string" ? data.url : ""
-              return {
-                icon: "%",
-                title: `WebFetch ${url}`,
-                body: (
-                  <Show when={url}>
-                    <box paddingLeft={1}>
-                      <text fg={theme.textMuted}>{"URL: " + url}</text>
-                    </box>
-                  </Show>
-                ),
-              }
+              const url = data.url ?? ""
+              return pinfo(
+                "%",
+                `WebFetch ${url}`,
+                <Show when={url}>
+                  <box paddingLeft={1}>
+                    <text fg={theme.textMuted}>{"URL: " + url}</text>
+                  </box>
+                </Show>,
+              )
             }
 
             if (permission === "websearch") {
-              const query = typeof data.query === "string" ? data.query : ""
-              return {
-                icon: "◈",
-                title: `Exa Web Search "${query}"`,
-                body: (
-                  <Show when={query}>
-                    <box paddingLeft={1}>
-                      <text fg={theme.textMuted}>{"Query: " + query}</text>
-                    </box>
-                  </Show>
-                ),
-              }
+              const query = data.query ?? ""
+              return pinfo(
+                "◈",
+                `Exa Web Search "${query}"`,
+                <Show when={query}>
+                  <box paddingLeft={1}>
+                    <text fg={theme.textMuted}>{"Query: " + query}</text>
+                  </box>
+                </Show>,
+              )
             }
 
             if (permission === "codesearch") {
-              const query = typeof data.query === "string" ? data.query : ""
-              return {
-                icon: "◇",
-                title: `Exa Code Search "${query}"`,
-                body: (
-                  <Show when={query}>
-                    <box paddingLeft={1}>
-                      <text fg={theme.textMuted}>{"Query: " + query}</text>
-                    </box>
-                  </Show>
-                ),
-              }
+              const query = data.query ?? ""
+              return pinfo(
+                "◇",
+                `Exa Code Search "${query}"`,
+                <Show when={query}>
+                  <box paddingLeft={1}>
+                    <text fg={theme.textMuted}>{"Query: " + query}</text>
+                  </box>
+                </Show>,
+              )
             }
 
             if (permission === "external_directory") {
-              const meta = props.request.metadata ?? {}
-              const parent = typeof meta["parentDir"] === "string" ? meta["parentDir"] : undefined
-              const filepath = typeof meta["filepath"] === "string" ? meta["filepath"] : undefined
-              const pattern = props.request.patterns?.[0]
+              const parent = metaStr("parentDir")
+              const filepath = metaStr("filepath")
+              const patterns = (props.request.patterns ?? []).filter((p): p is string => typeof p === "string")
+              const pattern = patterns[0]
               const derived =
-                typeof pattern === "string" ? (pattern.includes("*") ? path.dirname(pattern) : pattern) : undefined
+                pattern !== undefined
+                  ? pattern.includes("*")
+                    ? path.dirname(pattern)
+                    : pattern
+                  : undefined
 
               const raw = parent ?? filepath ?? derived
               const dir = normalizePath(raw)
-              const patterns = (props.request.patterns ?? []).filter((p): p is string => typeof p === "string")
 
-              return {
-                icon: "←",
-                title: `Access external directory ${dir}`,
-                body: (
-                  <Show when={patterns.length > 0}>
-                    <box paddingLeft={1} gap={1}>
-                      <text fg={theme.textMuted}>Patterns</text>
-                      <box>
-                        <For each={patterns}>{(p) => <text fg={theme.text}>{"- " + p}</text>}</For>
-                      </box>
+              return pinfo(
+                "←",
+                `Access external directory ${dir}`,
+                <Show when={patterns.length > 0}>
+                  <box paddingLeft={1} gap={1}>
+                    <text fg={theme.textMuted}>Patterns</text>
+                    <box>
+                      <For each={patterns}>
+                        {(p: string): JSX.Element => {
+                          return <text fg={theme.text}>{"- " + p}</text>
+                        }}
+                      </For>
                     </box>
-                  </Show>
-                ),
-              }
+                  </box>
+                </Show>,
+              )
             }
 
             if (permission === "doom_loop") {
-              return {
-                icon: "⟳",
-                title: "Continue after repeated failures",
-                body: (
-                  <box paddingLeft={1}>
-                    <text fg={theme.textMuted}>This keeps the session running despite repeated failures.</text>
-                  </box>
-                ),
-              }
+              return pinfo(
+                "⟳",
+                "Continue after repeated failures",
+                <box paddingLeft={1}>
+                  <text fg={theme.textMuted}>This keeps the session running despite repeated failures.</text>
+                </box>,
+              )
             }
 
-            return {
-              icon: "⚙",
-              title: `Call tool ${permission}`,
-              body: (
-                <box paddingLeft={1}>
-                  <text fg={theme.textMuted}>{"Tool: " + permission}</text>
-                </box>
-              ),
-            }
+            return pinfo(
+              "⚙",
+              `Call tool ${permission}`,
+              <box paddingLeft={1}>
+                <text fg={theme.textMuted}>{"Tool: " + permission}</text>
+              </box>,
+            )
           }
 
           const current = info()
 
-          const header = () => (
-            <box flexDirection="column" gap={0}>
-              <box flexDirection="row" gap={1} flexShrink={0}>
-                <text fg={theme.warning}>{"△"}</text>
-                <text fg={theme.text}>Permission required</text>
+          const header = (): JSX.Element => {
+            return (
+              <box flexDirection="column" gap={0}>
+                <box flexDirection="row" gap={1} flexShrink={0}>
+                  <text fg={theme.warning}>{"△"}</text>
+                  <text fg={theme.text}>Permission required</text>
+                </box>
+                <box flexDirection="row" gap={1} paddingLeft={2} flexShrink={0}>
+                  <text fg={theme.textMuted} flexShrink={0}>
+                    {current.icon}
+                  </text>
+                  <text fg={theme.text}>{current.title}</text>
+                </box>
               </box>
-              <box flexDirection="row" gap={1} paddingLeft={2} flexShrink={0}>
-                <text fg={theme.textMuted} flexShrink={0}>
-                  {current.icon}
-                </text>
-                <text fg={theme.text}>{current.title}</text>
-              </box>
-            </box>
-          )
+            )
+          }
 
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           const body = (
             <Prompt
               title="Permission required"
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
               header={header()}
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
               body={current.body}
               options={{ once: "Allow once", always: "Allow always", reject: "Reject" }}
               escapeKey="reject"
@@ -489,6 +497,7 @@ export function PermissionPrompt(props: { request: PermissionRequest }) {
             />
           )
 
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-return
           return body
         })()}
       </Match>
@@ -496,7 +505,7 @@ export function PermissionPrompt(props: { request: PermissionRequest }) {
   )
 }
 
-function RejectPrompt(props: { onConfirm: (message: string) => void; onCancel: () => void }) {
+function RejectPrompt(props: { onConfirm: (message: string) => void; onCancel: () => void }): JSX.Element {
   let input: TextareaRenderable
   const { theme } = useTheme()
   const keybind = useKeybind()
@@ -579,7 +588,7 @@ function Prompt<const T extends Record<string, string>>(props: {
   escapeKey?: keyof T
   fullscreen?: boolean
   onSelect: (option: keyof T) => void
-}) {
+}): JSX.Element {
   const { theme } = useTheme()
   const keybind = useKeybind()
   const dimensions = useTerminalDimensions()
@@ -595,14 +604,14 @@ function Prompt<const T extends Record<string, string>>(props: {
   useKeyboard((evt) => {
     if (dialog.stack.length > 0) return
 
-    if (evt.name === "left" || evt.name == "h") {
+    if (evt.name === "left" || evt.name === "h") {
       evt.preventDefault()
       const idx = keys.indexOf(store.selected)
       const next = keys[(idx - 1 + keys.length) % keys.length]
       setStore("selected", next)
     }
 
-    if (evt.name === "right" || evt.name == "l") {
+    if (evt.name === "right" || evt.name === "l") {
       evt.preventDefault()
       const idx = keys.indexOf(store.selected)
       const next = keys[(idx + 1) % keys.length]
@@ -627,29 +636,40 @@ function Prompt<const T extends Record<string, string>>(props: {
   })
 
   const hint = createMemo(() => (store.expanded ? "minimize" : "fullscreen"))
-  const renderer = useRenderer()
+  const _renderer = useRenderer()
 
-  const content = () => (
+  const content = (): JSX.Element => {
+    const boxProps = store.expanded
+      ? {
+          top: dimensions().height * -1 + 1,
+          bottom: 1,
+          left: 2,
+          right: 2,
+          position: "absolute" as const,
+        }
+      : {
+          top: 0,
+          maxHeight: 15,
+          bottom: 0,
+          left: 0,
+          right: 0,
+          position: "relative" as const,
+        }
+
+    return (
     <box
       backgroundColor={theme.backgroundPanel}
       border={["left"]}
       borderColor={theme.warning}
       customBorderChars={SplitBorder.customBorderChars}
-      {...(store.expanded
-        ? { top: dimensions().height * -1 + 1, bottom: 1, left: 2, right: 2, position: "absolute" }
-        : {
-            top: 0,
-            maxHeight: 15,
-            bottom: 0,
-            left: 0,
-            right: 0,
-            position: "relative",
-          })}
+      {...boxProps}
     >
       <box gap={1} paddingLeft={1} paddingRight={3} paddingTop={1} paddingBottom={1} flexGrow={1}>
         <Show
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           when={props.header}
           fallback={
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             <box flexDirection="row" gap={1} paddingLeft={1} flexShrink={0}>
               <text fg={theme.warning}>{"△"}</text>
               <text fg={theme.text}>{props.title}</text>
@@ -676,7 +696,10 @@ function Prompt<const T extends Record<string, string>>(props: {
       >
         <box flexDirection="row" gap={1} flexShrink={0}>
           <For each={keys}>
-            {(option) => (
+            {(option) => {
+              const label: string = props.options[option]
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+              return (
               <box
                 paddingLeft={1}
                 paddingRight={1}
@@ -688,10 +711,11 @@ function Prompt<const T extends Record<string, string>>(props: {
                 }}
               >
                 <text fg={option === store.selected ? selectedForeground(theme, theme.warning) : theme.textMuted}>
-                  {props.options[option]}
+                  {label}
                 </text>
               </box>
-            )}
+              )
+            }}
           </For>
         </box>
         <box flexDirection="row" gap={2} flexShrink={0}>
@@ -709,10 +733,15 @@ function Prompt<const T extends Record<string, string>>(props: {
         </box>
       </box>
     </box>
-  )
+    )
+  }
 
   return (
-    <Show when={!store.expanded} fallback={<Portal>{content()}</Portal>}>
+    <Show
+      when={!store.expanded}
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      fallback={<Portal>{content()}</Portal>}
+    >
       {content()}
     </Show>
   )

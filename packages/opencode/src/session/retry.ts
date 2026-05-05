@@ -1,7 +1,10 @@
 import type { NamedError } from "@opencode-ai/util/error"
+import { Cause, Clock, Duration, Effect, Schedule } from "effect"
 import { MessageV2 } from "./message-v2"
 
-type RetryError = ReturnType<NamedError["toObject"]>
+export type Err = ReturnType<NamedError["toObject"]>
+
+type RetryError = Err
 type RetryErrorPayload = {
   code?: string
   type?: string
@@ -127,12 +130,43 @@ export function retryable(error: RetryError) {
   return JSON.stringify(json)
 }
 
-export const SessionRetry = {
-  RETRY_INITIAL_DELAY,
-  RETRY_BACKOFF_FACTOR,
-  RETRY_MAX_DELAY_NO_HEADERS,
-  RETRY_MAX_DELAY,
-  sleep,
-  delay,
-  retryable,
+function cap(ms: number) {
+  return Math.min(ms, RETRY_MAX_DELAY)
+}
+
+function delayWithCap(attempt: number, error?: MessageV2.APIError) {
+  return cap(delay(attempt, error))
+}
+
+const outerSleep = sleep
+const outerDelay = delay
+const outerRetryable = retryable
+
+export namespace SessionRetry {
+  export const RETRY_INITIAL_DELAY = 2000
+  export const RETRY_BACKOFF_FACTOR = 2
+  export const RETRY_MAX_DELAY_NO_HEADERS = 30_000
+  export const RETRY_MAX_DELAY = 2_147_483_647
+  export const sleep = outerSleep
+  export const delay = outerDelay
+  export const retryable = outerRetryable
+
+  export function policy(opts: {
+    parse: (error: unknown) => Err
+    set: (input: { attempt: number; message: string; next: number }) => Effect.Effect<void>
+  }) {
+    return Schedule.fromStepWithMetadata(
+      Effect.succeed((meta: Schedule.InputMetadata<unknown>) => {
+        const error = opts.parse(meta.input)
+        const message = outerRetryable(error)
+        if (!message) return Cause.done(meta.attempt)
+        return Effect.gen(function* () {
+          const wait = delayWithCap(meta.attempt, MessageV2.APIError.isInstance(error) ? error : undefined)
+          const now = yield* Clock.currentTimeMillis
+          yield* opts.set({ attempt: meta.attempt, message, next: now + wait })
+          return [meta.attempt, Duration.millis(wait)] as [number, Duration.Duration]
+        })
+      }),
+    )
+  }
 }

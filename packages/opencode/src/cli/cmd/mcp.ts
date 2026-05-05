@@ -223,7 +223,7 @@ export const McpLogoutCommand = cmd({
   },
 })
 
-function resolveConfigPath(baseDir: string, global = false) {
+async function resolveConfigPath(baseDir: string, global = false) {
   // Check for existing config files (prefer .jsonc over .json, check .opencode/ subdirectory too)
   const candidates = [path.join(baseDir, "opencode.json"), path.join(baseDir, "opencode.jsonc")]
 
@@ -232,7 +232,7 @@ function resolveConfigPath(baseDir: string, global = false) {
   }
 
   for (const candidate of candidates) {
-    if (Filesystem.exists(candidate)) {
+    if (await Filesystem.exists(candidate)) {
       return candidate
     }
   }
@@ -243,7 +243,7 @@ function resolveConfigPath(baseDir: string, global = false) {
 
 async function addMcpToConfig(name: string, mcpConfig: Config.Mcp, configPath: string) {
   let text = "{}"
-  if (Filesystem.exists(configPath)) {
+  if (await Filesystem.exists(configPath)) {
     text = await Filesystem.readText(configPath)
   }
 
@@ -283,8 +283,8 @@ export const McpAddCommand = cmd({
         const project = Instance.project
 
         // Resolve config paths eagerly for hints
-        const projectConfigPath = resolveConfigPath(Instance.worktree)
-        const globalConfigPath = resolveConfigPath(Global.Path.config, true)
+        const projectConfigPath = await resolveConfigPath(Instance.worktree)
+        const globalConfigPath = await resolveConfigPath(Global.Path.config, true)
 
         // Determine scope
         let configPath = globalConfigPath
@@ -582,7 +582,7 @@ export const McpDebugCommand = cmd({
             const body = await response.text()
             try {
               const json = parseMcpDebugInfo(body)
-              if (json.result?.serverInfo) {
+              if (json && json.result?.serverInfo) {
                 prompts.log.info(`Server info: ${JSON.stringify(json.result.serverInfo)}`)
               }
             } catch {

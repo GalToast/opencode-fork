@@ -4,8 +4,11 @@ import { isRecord } from "@/util/record"
 
 type RuntimeSlotMap = TuiSlotMap<Record<string, object>>
 
-type Slot = <Name extends string>(props: TuiSlotProps<Name>) => JSX.Element | null
-export type HostSlotPlugin<Slots extends Record<string, object> = {}> = SolidPlugin<TuiSlotMap<Slots>, TuiSlotContext>
+type SlotComponent = <Name extends string>(props: TuiSlotProps<Name>) => JSX.Element
+export type HostSlotPlugin<Slots extends Record<string, object> = Record<string, object>> = SolidPlugin<
+  TuiSlotMap<Slots>,
+  TuiSlotContext
+>
 
 export type HostPluginApi = TuiPluginApi
 export type HostSlots = {
@@ -19,9 +22,12 @@ function empty<Name extends string>(_props: TuiSlotProps<Name>) {
   return null
 }
 
-let view: Slot = empty
+let view: SlotComponent = empty
 
-export const Slot: Slot = (props) => view(props)
+export const Slot: SlotComponent = (props) => {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+  return view(props)
+}
 
 function isHostSlotPlugin(value: unknown): value is HostSlotPlugin<Record<string, object>> {
   if (!isRecord(value)) return false

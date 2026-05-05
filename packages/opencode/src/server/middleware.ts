@@ -5,9 +5,9 @@ import { Session } from "../session"
 import type { ContentfulStatusCode } from "hono/utils/http-status"
 import type { ErrorHandler } from "hono"
 import { HTTPException } from "hono/http-exception"
-import type { Log } from "../util/log"
+import type { Logger } from "../util/log"
 
-export function errorHandler(log: Log.Logger): ErrorHandler {
+export function errorHandler(log: Logger): ErrorHandler {
   return (err, c) => {
     log.error("failed", {
       error: err,

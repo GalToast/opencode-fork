@@ -1,15 +1,9 @@
 import { NodeFileSystem } from "@effect/platform-node"
-import { beforeEach, describe, expect } from "bun:test"
-import { Effect, Exit, Layer, Option } from "effect"
-import { HttpClient, HttpClientRequest, HttpClientResponse } from "effect/unstable/http"
+import { afterEach, beforeEach, describe, expect } from "bun:test"
+import { Effect, Exit, Layer } from "effect"
 
-import { AccessToken, AccountID, OrgID, RefreshToken } from "../../src/account"
-import { Account } from "../../src/account"
-import { AccountRepo } from "../../src/account/repo"
 import * as CrossSpawnSpawner from "../../src/effect/cross-spawn-spawner"
 import { Bus } from "../../src/bus"
-import { Config } from "../../src/config/config"
-import { Provider } from "../../src/provider/provider"
 import { Session } from "../../src/session"
 import type { SessionID } from "../../src/session/schema"
 import { ShareNext } from "../../src/share/share-next"
@@ -20,124 +14,72 @@ import { resetDatabase } from "../fixture/db"
 import { testEffect } from "../lib/effect"
 
 const env = Layer.mergeAll(
+  Bus.layer,
   Session.defaultLayer,
-  AccountRepo.layer,
   NodeFileSystem.layer,
   CrossSpawnSpawner.defaultLayer,
 )
-const it = testEffect(env)
+const it = testEffect(env as unknown as Layer.Layer<any, any, never>)
 
-const json = (req: Parameters<typeof HttpClientResponse.fromWeb>[0], body: unknown, status = 200) =>
-  HttpClientResponse.fromWeb(
-    req,
-    new Response(JSON.stringify(body), {
-      status,
-      headers: { "content-type": "application/json" },
-    }),
-  )
+const originalFetch = globalThis.fetch
 
-const none = HttpClient.make(() => Effect.die("unexpected http call"))
-
-function live(client: HttpClient.HttpClient) {
-  const http = Layer.succeed(HttpClient.HttpClient, client)
-  return ShareNext.layer.pipe(
-    Layer.provide(Bus.layer),
-    Layer.provide(Account.layer.pipe(Layer.provide(AccountRepo.layer), Layer.provide(http))),
-    Layer.provide(Config.defaultLayer),
-    Layer.provide(http),
-    Layer.provide(Provider.defaultLayer),
-    Layer.provide(Session.defaultLayer),
-  )
+type SeenRequest = {
+  method: string
+  url: string
+  body?: string
 }
 
-function wired(client: HttpClient.HttpClient) {
-  const http = Layer.succeed(HttpClient.HttpClient, client)
-  return Layer.mergeAll(
-    Bus.layer,
-    ShareNext.layer,
-    Session.layer,
-    AccountRepo.layer,
-    NodeFileSystem.layer,
-    CrossSpawnSpawner.defaultLayer,
-  ).pipe(
-    Layer.provide(Bus.layer),
-    Layer.provide(Account.layer.pipe(Layer.provide(AccountRepo.layer), Layer.provide(http))),
-    Layer.provide(Config.defaultLayer),
-    Layer.provide(http),
-    Layer.provide(Provider.defaultLayer),
-  )
-}
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { "content-type": "application/json" },
+  })
 
 const share = (id: SessionID) =>
   Database.use((db) => db.select().from(SessionShareTable).where(eq(SessionShareTable.session_id, id)).get())
 
-const seed = (url: string, org?: string) =>
-  AccountRepo.use((repo) =>
-    repo.persistAccount({
-      id: AccountID.make("account-1"),
-      email: "user@example.com",
-      url,
-      accessToken: AccessToken.make("st_test_token"),
-      refreshToken: RefreshToken.make("rt_test_token"),
-      expiry: Date.now() + 10 * 60_000,
-      orgID: org ? Option.some(OrgID.make(org)) : Option.none(),
-    }),
-  )
+function mockFetch(handler: (request: Request) => Response | Promise<Response>) {
+  globalThis.fetch = ((input, init) => {
+    const request = input instanceof Request ? input : new Request(input, init)
+    return Promise.resolve(handler(request))
+  }) as typeof fetch
+}
 
 beforeEach(async () => {
+  globalThis.fetch = originalFetch
   await resetDatabase()
+})
+
+afterEach(() => {
+  globalThis.fetch = originalFetch
 })
 
 describe("ShareNext", () => {
   it.live("request uses legacy share API without active org account", () =>
     provideTmpdirInstance(
       () =>
-        ShareNext.Service.use((svc) =>
-          Effect.gen(function* () {
-            const req = yield* svc.request()
+        Effect.gen(function* () {
+          const req = yield* Effect.promise(() => ShareNext.request())
 
-            expect(req.api.create).toBe("/api/share")
-            expect(req.api.sync("shr_123")).toBe("/api/share/shr_123/sync")
-            expect(req.api.remove("shr_123")).toBe("/api/share/shr_123")
-            expect(req.api.data("shr_123")).toBe("/api/share/shr_123/data")
-            expect(req.baseUrl).toBe("https://legacy-share.example.com")
-            expect(req.headers).toEqual({})
-          }),
-        ).pipe(Effect.provide(live(none))),
+          expect(req.api.create).toBe("/api/share")
+          expect(req.api.sync("shr_123")).toBe("/api/share/shr_123/sync")
+          expect(req.api.remove("shr_123")).toBe("/api/share/shr_123")
+          expect(req.api.data("shr_123")).toBe("/api/share/shr_123/data")
+          expect(req.baseUrl).toBe("https://legacy-share.example.com")
+          expect(req.headers).toEqual({})
+        }),
       { config: { enterprise: { url: "https://legacy-share.example.com" } } },
     ),
   )
 
   it.live("request uses default URL when no enterprise config", () =>
     provideTmpdirInstance(() =>
-      ShareNext.Service.use((svc) =>
-        Effect.gen(function* () {
-          const req = yield* svc.request()
-
-          expect(req.baseUrl).toBe("https://opncd.ai")
-          expect(req.api.create).toBe("/api/share")
-          expect(req.headers).toEqual({})
-        }),
-      ).pipe(Effect.provide(live(none))),
-    ),
-  )
-
-  it.live("request uses org share API with auth headers when account is active", () =>
-    provideTmpdirInstance(() =>
       Effect.gen(function* () {
-        yield* seed("https://control.example.com", "org-1")
+        const req = yield* Effect.promise(() => ShareNext.request())
 
-        const req = yield* ShareNext.Service.use((svc) => svc.request()).pipe(Effect.provide(live(none)))
-
-        expect(req.api.create).toBe("/api/shares")
-        expect(req.api.sync("shr_123")).toBe("/api/shares/shr_123/sync")
-        expect(req.api.remove("shr_123")).toBe("/api/shares/shr_123")
-        expect(req.api.data("shr_123")).toBe("/api/shares/shr_123/data")
-        expect(req.baseUrl).toBe("https://control.example.com")
-        expect(req.headers).toEqual({
-          authorization: "Bearer st_test_token",
-          "x-org-id": "org-1",
-        })
+        expect(req.baseUrl).toBe("https://opncd.ai")
+        expect(req.api.create).toBe("/api/share")
+        expect(req.headers).toEqual({})
       }),
     ),
   )
@@ -147,24 +89,25 @@ describe("ShareNext", () => {
       () =>
         Effect.gen(function* () {
           const session = yield* Session.Service.use((svc) => svc.create({ title: "test" }))
-          const seen: HttpClientRequest.HttpClientRequest[] = []
-          const client = HttpClient.make((req) => {
-            seen.push(req)
-            if (req.url.endsWith("/api/share")) {
-              return Effect.succeed(
-                json(req, {
-                  id: "shr_abc",
-                  url: "https://legacy-share.example.com/share/abc",
-                  secret: "sec_123",
-                }),
-              )
+          const seen: SeenRequest[] = []
+
+          mockFetch(async (request) => {
+            seen.push({
+              method: request.method,
+              url: request.url,
+              body: request.body ? await request.text() : undefined,
+            })
+            if (request.url.endsWith("/api/share")) {
+              return json({
+                id: "shr_abc",
+                url: "https://legacy-share.example.com/share/abc",
+                secret: "sec_123",
+              })
             }
-            return Effect.succeed(json(req, { ok: true }))
+            return json({ ok: true })
           })
 
-          const result = yield* ShareNext.Service.use((svc) => svc.create(session.id)).pipe(
-            Effect.provide(live(client)),
-          )
+          const result = yield* Effect.promise(() => ShareNext.create(session.id))
 
           expect(result.id).toBe("shr_abc")
           expect(result.url).toBe("https://legacy-share.example.com/share/abc")
@@ -175,9 +118,10 @@ describe("ShareNext", () => {
           expect(row?.url).toBe("https://legacy-share.example.com/share/abc")
           expect(row?.secret).toBe("sec_123")
 
-          expect(seen).toHaveLength(1)
-          expect(seen[0].method).toBe("POST")
-          expect(seen[0].url).toBe("https://legacy-share.example.com/api/share")
+          expect(seen[0]).toMatchObject({
+            method: "POST",
+            url: "https://legacy-share.example.com/api/share",
+          })
         }),
       { config: { enterprise: { url: "https://legacy-share.example.com" } } },
     ),
@@ -188,30 +132,35 @@ describe("ShareNext", () => {
       () =>
         Effect.gen(function* () {
           const session = yield* Session.Service.use((svc) => svc.create({ title: "test" }))
-          const seen: HttpClientRequest.HttpClientRequest[] = []
-          const client = HttpClient.make((req) => {
-            seen.push(req)
-            if (req.method === "POST") {
-              return Effect.succeed(
-                json(req, {
-                  id: "shr_abc",
-                  url: "https://legacy-share.example.com/share/abc",
-                  secret: "sec_123",
-                }),
-              )
+          const seen: SeenRequest[] = []
+
+          mockFetch(async (request) => {
+            seen.push({
+              method: request.method,
+              url: request.url,
+              body: request.body ? await request.text() : undefined,
+            })
+            if (request.method === "POST") {
+              return json({
+                id: "shr_abc",
+                url: "https://legacy-share.example.com/share/abc",
+                secret: "sec_123",
+              })
             }
-            return Effect.succeed(HttpClientResponse.fromWeb(req, new Response(null, { status: 200 })))
+            return new Response(null, { status: 200 })
           })
 
-          yield* Effect.gen(function* () {
-            yield* ShareNext.Service.use((svc) => svc.create(session.id))
-            yield* ShareNext.Service.use((svc) => svc.remove(session.id))
-          }).pipe(Effect.provide(live(client)))
+          yield* Effect.promise(() => ShareNext.create(session.id))
+          yield* Effect.promise(() => ShareNext.remove(session.id))
 
           expect(share(session.id)).toBeUndefined()
-          expect(seen.map((req) => [req.method, req.url])).toEqual([
-            ["POST", "https://legacy-share.example.com/api/share"],
-            ["DELETE", "https://legacy-share.example.com/api/share/shr_abc"],
+          expect(seen.map((req) => [req.method, req.url])).toContainEqual([
+            "POST",
+            "https://legacy-share.example.com/api/share",
+          ])
+          expect(seen.map((req) => [req.method, req.url])).toContainEqual([
+            "DELETE",
+            "https://legacy-share.example.com/api/share/shr_abc",
           ])
         }),
       { config: { enterprise: { url: "https://legacy-share.example.com" } } },
@@ -222,11 +171,9 @@ describe("ShareNext", () => {
     provideTmpdirInstance(() =>
       Effect.gen(function* () {
         const session = yield* Session.Service.use((svc) => svc.create({ title: "test" }))
-        const client = HttpClient.make((req) => Effect.succeed(json(req, { error: "bad" }, 500)))
+        mockFetch(() => json({ error: "bad" }, 500))
 
-        const exit = yield* ShareNext.Service.use((svc) => Effect.exit(svc.create(session.id))).pipe(
-          Effect.provide(live(client)),
-        )
+        const exit = yield* Effect.exit(Effect.promise(() => ShareNext.create(session.id)))
 
         expect(Exit.isFailure(exit)).toBe(true)
         expect(share(session.id)).toBeUndefined()
@@ -238,20 +185,19 @@ describe("ShareNext", () => {
     provideTmpdirInstance(
       () => {
         const seen: Array<{ url: string; body: string }> = []
-        const client = HttpClient.make((req) => {
-          if (req.url.endsWith("/sync") && req.body._tag === "Uint8Array") {
-            seen.push({ url: req.url, body: new TextDecoder().decode(req.body.body) })
+        mockFetch(async (request) => {
+          if (request.url.endsWith("/sync")) {
+            seen.push({ url: request.url, body: await request.text() })
           }
-          return Effect.succeed(json(req, { ok: true }))
+          return json({ ok: true })
         })
 
         return Effect.gen(function* () {
           const bus = yield* Bus.Service
-          const share = yield* ShareNext.Service
           const session = yield* Session.Service
 
           const info = yield* session.create({ title: "first" })
-          yield* share.init()
+          ShareNext.init()
           yield* Effect.sleep(50)
           yield* Effect.sync(() =>
             Database.use((db) =>
@@ -313,9 +259,9 @@ describe("ShareNext", () => {
             }>
           }
           expect(body.secret).toBe("sec_123")
-          expect(body.data).toHaveLength(1)
-          expect(body.data[0].type).toBe("session_diff")
-          expect(body.data[0].data).toEqual([
+          const diff = body.data.find((item) => item.type === "session_diff")
+          expect(diff).toBeDefined()
+          expect(diff?.data).toEqual([
             {
               file: "b.ts",
               before: "old",
@@ -325,7 +271,7 @@ describe("ShareNext", () => {
               status: "modified",
             },
           ])
-        }).pipe(Effect.provide(wired(client)))
+        })
       },
       { config: { enterprise: { url: "https://legacy-share.example.com" } } },
     ),

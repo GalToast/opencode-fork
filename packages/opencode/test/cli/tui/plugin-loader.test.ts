@@ -324,7 +324,8 @@ export default {
     },
   })
   const cwd = spyOn(process, "cwd").mockImplementation(() => tmp.path)
-  const wait = spyOn(TuiConfig, "waitForDependencies").mockResolvedValue()
+  const getGlobal = spyOn(Config, "get").mockResolvedValue({} as Config.Info)
+  const wait = spyOn(Config, "waitForDependencies").mockResolvedValue(undefined)
   const install = spyOn(Config, "installDependencies").mockResolvedValue()
 
   try {
@@ -406,6 +407,7 @@ export default {
   } finally {
     await TuiPluginRuntime.dispose()
     cwd.mockRestore()
+    getGlobal.mockRestore()
     wait.mockRestore()
     install.mockRestore()
     if (backup === undefined) {
@@ -468,20 +470,22 @@ test("continues loading when a plugin is missing config metadata", async () => {
       [tmp.extra.goodSpec, { marker: tmp.extra.goodMarker }],
       tmp.extra.bareSpec,
     ],
+  })
+  const getGlobal = spyOn(Config, "get").mockResolvedValue({
     plugin_origins: [
       {
         spec: [tmp.extra.goodSpec, { marker: tmp.extra.goodMarker }],
-        scope: "local",
+        scope: "local" as const,
         source: path.join(tmp.path, "tui.json"),
       },
       {
         spec: tmp.extra.bareSpec,
-        scope: "local",
+        scope: "local" as const,
         source: path.join(tmp.path, "tui.json"),
       },
     ],
   })
-  const wait = spyOn(TuiConfig, "waitForDependencies").mockResolvedValue()
+  const wait = spyOn(Config, "waitForDependencies").mockResolvedValue(undefined)
   const cwd = spyOn(process, "cwd").mockImplementation(() => tmp.path)
 
   try {
@@ -496,6 +500,7 @@ test("continues loading when a plugin is missing config metadata", async () => {
     await TuiPluginRuntime.dispose()
     cwd.mockRestore()
     get.mockRestore()
+    getGlobal.mockRestore()
     wait.mockRestore()
     delete process.env.OPENCODE_PLUGIN_META_FILE
   }
@@ -700,7 +705,8 @@ test("updates installed theme when plugin metadata changes", async () => {
 
   process.env.OPENCODE_PLUGIN_META_FILE = path.join(tmp.path, "plugin-meta.json")
   const cwd = spyOn(process, "cwd").mockImplementation(() => tmp.path)
-  const wait = spyOn(TuiConfig, "waitForDependencies").mockResolvedValue()
+  const getGlobal = spyOn(Config, "get").mockResolvedValue({} as Config.Info)
+  const wait = spyOn(Config, "waitForDependencies").mockResolvedValue(undefined)
   const install = spyOn(Config, "installDependencies").mockResolvedValue()
 
   const api = () =>

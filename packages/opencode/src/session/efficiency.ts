@@ -241,6 +241,7 @@ export function historyProfileBuckets(messages: HistoryProfileMessage[]) {
       }
 
       if (part.type === "file" && message.info.role === "user") {
+        if (!part.mime) continue
         if (part.mime.startsWith("image/") || part.mime === "application/pdf") {
           buckets.historyUserAttachments.push(`[Attached ${part.mime}: ${part.filename ?? "file"}]`)
         } else if (part.mime !== "text/plain" && part.mime !== "application/x-directory") {

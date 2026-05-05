@@ -55,7 +55,7 @@ export const LspTool = Tool.define("lsp", {
 
     const available = await LSP.hasClients(file)
     if (!available) {
-      throw new Error("No LSP server available for this file type.")
+      throw new Error("No LSP server available for this file type. Try structural_read, grep, or read for a non-LSP fallback.")
     }
 
     await LSP.touchFile(file, true)
@@ -84,7 +84,8 @@ export const LspTool = Tool.define("lsp", {
     })()
 
     const output = (() => {
-      if (result.length === 0) return `No results found for ${args.operation}`
+      if (result.length === 0)
+        return `No results found for ${args.operation}.\nTry structural_read for a file outline, or read for direct source inspection.`
       return JSON.stringify(result, null, 2)
     })()
 

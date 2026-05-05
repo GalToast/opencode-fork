@@ -80,6 +80,7 @@ export function DialogTimeline(props: {
     return turns
   })
 
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
   return (
     <box gap={1} paddingBottom={1}>
       <box paddingLeft={4} paddingRight={4}>
@@ -102,6 +103,7 @@ export function DialogTimeline(props: {
       <box paddingTop={1} flexDirection="column" gap={0}>
         <For each={timelineTurns()}>
           {(turn) => {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-return
             return (
               <box
                 paddingLeft={4}

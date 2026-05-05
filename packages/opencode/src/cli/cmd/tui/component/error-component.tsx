@@ -26,7 +26,7 @@ export function ErrorComponent(props: {
 
   useKeyboard((evt) => {
     if (evt.ctrl && evt.name === "c") {
-      handleExit()
+      void handleExit()
     }
   })
   const [copied, setCopied] = createSignal(false)
@@ -56,11 +56,12 @@ export function ErrorComponent(props: {
   issueURL.searchParams.set("opencode-version", Installation.VERSION)
 
   const copyIssueURL = () => {
-    Clipboard.copy(issueURL.toString()).then(() => {
+    void Clipboard.copy(issueURL.toString()).then(() => {
       setCopied(true)
     })
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
   return (
     <box flexDirection="column" gap={1} backgroundColor={colors.bg}>
       <box flexDirection="row" gap={1} alignItems="center">

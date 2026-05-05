@@ -19,7 +19,6 @@ type SkillResponse = {
 
 export function DialogSkill(props: DialogSkillProps) {
   const dialog = useDialog()
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const client: OpencodeClient = useSDK().client
   dialog.setSize("large")
 

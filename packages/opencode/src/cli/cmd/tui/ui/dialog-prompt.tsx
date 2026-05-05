@@ -1,4 +1,4 @@
-import { TextareaRenderable, TextAttributes } from "@opentui/core"
+import { type TextareaRenderable, TextAttributes } from "@opentui/core"
 import { useTheme } from "../context/theme"
 import { useDialog, type DialogContext } from "./dialog"
 import { Show, createEffect, onMount, type JSX } from "solid-js"
@@ -16,7 +16,7 @@ export type DialogPromptProps = {
   onCancel?: () => void
 }
 
-export function DialogPrompt(props: DialogPromptProps) {
+export function DialogPrompt(props: DialogPromptProps): JSX.Element {
   const dialog = useDialog()
   const { theme } = useTheme()
   let textarea: TextareaRenderable
@@ -59,6 +59,7 @@ export function DialogPrompt(props: DialogPromptProps) {
     textarea.focus()
   })
 
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
   return (
     <box paddingLeft={2} paddingRight={2} gap={1}>
       <box flexDirection="row" justifyContent="space-between">
@@ -70,7 +71,7 @@ export function DialogPrompt(props: DialogPromptProps) {
         </text>
       </box>
       <box gap={1}>
-        {props.description}
+        {props.description?.()}
         <textarea
           onSubmit={() => {
             if (props.busy) return
@@ -93,9 +94,16 @@ export function DialogPrompt(props: DialogPromptProps) {
         </Show>
       </box>
       <box paddingBottom={1} gap={1} flexDirection="row">
-        <Show when={!props.busy} fallback={<text fg={theme.textMuted}>processing...</text>}>
+        <Show
+          when={!props.busy}
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          fallback={<text fg={theme.textMuted}>processing...</text>}
+        >
           <text fg={theme.text}>
-            enter <span style={{ fg: theme.textMuted }}>submit</span>
+            enter{" "}
+            <span style={{ fg: theme.textMuted } as JSX.CSSProperties}>
+              submit
+            </span>
           </text>
         </Show>
       </box>
@@ -103,12 +111,20 @@ export function DialogPrompt(props: DialogPromptProps) {
   )
 }
 
-DialogPrompt.show = (dialog: DialogContext, title: string, options?: Omit<DialogPromptProps, "title">) => {
+DialogPrompt.show = (dialog: DialogContext, title: string, options?: Omit<DialogPromptProps, "title">): Promise<string | null> => {
   return new Promise<string | null>((resolve) => {
     dialog.replace(
-      () => (
-        <DialogPrompt title={title} {...options} onConfirm={(value) => resolve(value)} onCancel={() => resolve(null)} />
-      ),
+      (): JSX.Element => {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+        return (
+          <DialogPrompt
+            title={title}
+            {...options}
+            onConfirm={(value) => resolve(value)}
+            onCancel={() => resolve(null)}
+          />
+        )
+      },
       () => resolve(null),
     )
   })

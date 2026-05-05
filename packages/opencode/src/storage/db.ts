@@ -120,6 +120,10 @@ export namespace Database {
     Client.reset()
   }
 
+  export function resetMigrationStatus() {
+    Client.reset()
+  }
+
   export type TxOrDb = Transaction | Client
 
   const ctx = Context.create<{
@@ -135,7 +139,7 @@ export namespace Database {
         const effects: (() => void | Promise<void>)[] = []
         const result = ctx.provide({ effects, tx: Client() }, () => callback(Client()))
         for (const effect of effects) effect()
-        return result
+        return result as T
       }
       throw err
     }

@@ -25,6 +25,7 @@ function View(props: { api: TuiPluginApi }) {
     return theme().textMuted
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
   return (
     <Show when={list().length > 0}>
       <box>
@@ -44,32 +45,35 @@ function View(props: { api: TuiPluginApi }) {
         </box>
         <Show when={list().length <= 2 || open()}>
           <For each={list()}>
-            {(item) => (
-              <box flexDirection="row" gap={1}>
-                <text
-                  flexShrink={0}
-                  style={{
-                    fg: dot(item.status),
-                  }}
-                >
-                  •
-                </text>
-                <text fg={theme().text} wrapMode="word">
-                  {item.name}{" "}
-                  <span style={{ fg: theme().textMuted }}>
-                    <Switch fallback={item.status}>
-                      <Match when={item.status === "connected"}>Connected</Match>
-                      <Match when={item.status === "failed"}>
-                        <i>{item.error}</i>
-                      </Match>
-                      <Match when={item.status === "disabled"}>Disabled</Match>
-                      <Match when={item.status === "needs_auth"}>Needs auth</Match>
-                      <Match when={item.status === "needs_client_registration"}>Needs client ID</Match>
-                    </Switch>
-                  </span>
-                </text>
-              </box>
-            )}
+            {(item) => {
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+              return (
+                <box flexDirection="row" gap={1}>
+                  <text
+                    flexShrink={0}
+                    style={{
+                      fg: dot(item.status),
+                    }}
+                  >
+                    •
+                  </text>
+                  <text fg={theme().text} wrapMode="word">
+                    {item.name}{" "}
+                    <span style={{ fg: theme().textMuted }}>
+                      <Switch fallback={item.status}>
+                        <Match when={item.status === "connected"}>Connected</Match>
+                        <Match when={item.status === "failed"}>
+                          <i>{item.error}</i>
+                        </Match>
+                        <Match when={item.status === "disabled"}>Disabled</Match>
+                        <Match when={item.status === "needs_auth"}>Needs auth</Match>
+                        <Match when={item.status === "needs_client_registration"}>Needs client ID</Match>
+                      </Switch>
+                    </span>
+                  </text>
+                </box>
+              )
+            }}
           </For>
         </Show>
       </box>
@@ -77,15 +81,17 @@ function View(props: { api: TuiPluginApi }) {
   )
 }
 
-const tui: TuiPlugin = async (api) => {
+const tui: TuiPlugin = (api) => {
   api.slots.register({
     order: 200,
     slots: {
       sidebar_content() {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
         return <View api={api} />
       },
     },
   })
+  return Promise.resolve()
 }
 
 const plugin: TuiPluginModule & { id: string } = {

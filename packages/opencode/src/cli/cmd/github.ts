@@ -22,7 +22,7 @@ import { ModelsDev } from "../../provider/models"
 import { Instance } from "@/project/instance"
 import { bootstrap } from "../bootstrap"
 import { Session } from "../../session"
-import { Identifier } from "../../id/id"
+import { SessionID, MessageID, PartID } from "../../session/schema"
 import { Provider } from "../../provider/provider"
 import { Bus } from "../../bus"
 import { MessageV2 } from "../../session/message-v2"
@@ -543,7 +543,7 @@ export const GithubRunCommand = cmd({
         shareId = await (async () => {
           if (share === false) return
           if (!share && repoData.data.private) return
-          await Session.share(session.id)
+          await Session.share(session.id as SessionID)
           return session.id.slice(-8)
         })()
         console.log("opencode session", session.id)
@@ -918,8 +918,8 @@ export const GithubRunCommand = cmd({
         console.log("Sending message to opencode...")
 
         const result = await SessionPrompt.prompt({
-          sessionID: session.id,
-          messageID: Identifier.ascending("message"),
+          sessionID: session.id as SessionID,
+          messageID: MessageID.ascending(),
           variant,
           model: {
             providerID: selectedProviderID,
@@ -928,13 +928,13 @@ export const GithubRunCommand = cmd({
           // agent is omitted - server will use default_agent from config or fall back to "build"
           parts: [
             {
-              id: Identifier.ascending("part"),
+              id: PartID.ascending(),
               type: "text",
               text: message,
             },
             ...files.flatMap((f) => [
               {
-                id: Identifier.ascending("part"),
+                id: PartID.ascending(),
                 type: "file" as const,
                 mime: f.mime,
                 url: `data:${f.mime};base64,${f.content}`,
@@ -972,8 +972,8 @@ export const GithubRunCommand = cmd({
         // No text part (tool-only or reasoning-only) - ask agent to summarize
         console.log("Requesting summary from agent...")
         const summary = await SessionPrompt.prompt({
-          sessionID: session.id,
-          messageID: Identifier.ascending("message"),
+          sessionID: session.id as SessionID,
+          messageID: MessageID.ascending(),
           variant,
           model: {
             providerID: selectedProviderID,
@@ -982,7 +982,7 @@ export const GithubRunCommand = cmd({
           tools: { "*": false }, // Disable all tools to force text response
           parts: [
             {
-              id: Identifier.ascending("part"),
+              id: PartID.ascending(),
               type: "text",
               text: "Summarize the actions (tool calls & reasoning) you did for the user in 1-2 sentences.",
             },

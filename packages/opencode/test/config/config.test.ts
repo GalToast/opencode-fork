@@ -1789,7 +1789,7 @@ test("project config overrides remote well-known config", async () => {
   const fakeAuth = Layer.mock(Auth.Service)({
     all: () =>
       Effect.succeed({
-        "https://example.com": new Auth.WellKnown({ type: "wellknown", key: "TEST_TOKEN", token: "test-token" }),
+        "https://example.com": Auth.WellKnown.parse({ type: "wellknown", key: "TEST_TOKEN", token: "test-token" }),
       }),
   })
 
@@ -1844,7 +1844,7 @@ test("wellknown URL with trailing slash is normalized", async () => {
   const fakeAuth = Layer.mock(Auth.Service)({
     all: () =>
       Effect.succeed({
-        "https://example.com/": new Auth.WellKnown({ type: "wellknown", key: "TEST_TOKEN", token: "test-token" }),
+        "https://example.com/": Auth.WellKnown.parse({ type: "wellknown", key: "TEST_TOKEN", token: "test-token" }),
       }),
   })
 

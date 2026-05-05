@@ -202,32 +202,6 @@ type ConnectionStatusBarProps = {
 }
 
 export function ConnectionStatusBar(props: ConnectionStatusBarProps) {
-  const { theme } = useTheme()
-
-  const statusText = createMemo(() => {
-    if (props.connection === "disconnected") return "Disconnected"
-    if (props.connection === "connecting") return "Connecting"
-    if (props.sync === "error") return "Sync Error"
-    if (props.sync === "syncing") return "Syncing"
-    if (props.sessionState === "loading") return "Loading"
-    if (props.sessionState === "restoring") return "Restoring"
-    if (props.sessionState === "saving") return "Saving"
-    if (props.sessionState === "error") return "Error"
-    return "Connected"
-  })
-
-  const statusColor = createMemo(() => {
-    if (props.connection === "disconnected") return theme.error
-    if (props.connection === "connecting") return theme.warning
-    if (props.sync === "error") return theme.error
-    if (props.sync === "syncing") return theme.warning
-    if (props.sessionState === "loading" || props.sessionState === "restoring" || props.sessionState === "saving") {
-      return theme.warning
-    }
-    if (props.sessionState === "error") return theme.error
-    return theme.success
-  })
-
   if (props.compact) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return (

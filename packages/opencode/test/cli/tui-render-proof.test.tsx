@@ -19,15 +19,14 @@ type ProofArtifacts = {
   slashTasksAliasFrame: string
 }
 
-let proofArtifacts: ProofArtifacts | undefined
+let proofGenerated = false
 
 function readArtifact(name: string) {
   return readFileSync(path.join(outDir, name), "utf-8")
 }
 
-function loadProofArtifacts() {
-  if (proofArtifacts) return proofArtifacts
-
+function ensureProofArtifacts() {
+  if (proofGenerated) return
   const result = Bun.spawnSync({
     cmd: ["bun", "run", "script/tui-render-proof.tsx"],
     cwd: packageRoot,
@@ -37,8 +36,12 @@ function loadProofArtifacts() {
   })
   const stderr = new TextDecoder().decode(result.stderr).trim()
   expect({ exitCode: result.exitCode, stderr }).toEqual({ exitCode: 0, stderr: "" })
+  proofGenerated = true
+}
 
-  proofArtifacts = {
+function loadProofArtifacts(): ProofArtifacts {
+  ensureProofArtifacts()
+  return {
     planFrame: readArtifact("dialog-plan-frame.txt"),
     trackerFrame: readArtifact("dialog-tracker-frame.txt"),
     listFrame: readArtifact("dialog-tracker-list-frame.txt"),
@@ -49,8 +52,9 @@ function loadProofArtifacts() {
     slashTrackerFrame: readArtifact("slash-tracker-dispatch-frame.txt"),
     slashTasksAliasFrame: readArtifact("slash-tasks-alias-dispatch-frame.txt"),
   }
-  return proofArtifacts
 }
+
+ensureProofArtifacts()
 
 test("real DialogPlan module renders with mocked root-session surfaces", () => {
   const { planFrame } = loadProofArtifacts()

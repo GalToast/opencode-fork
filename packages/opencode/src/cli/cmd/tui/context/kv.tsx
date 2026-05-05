@@ -31,23 +31,26 @@ export const { use: useKV, provider: KVProvider } = createSimpleContext({
       get store() {
         return store
       },
-      signal<T>(name: string, defaultValue: T) {
+      signal<T>(name: string, defaultValue: T): readonly [() => T, (next: Setter<T>) => void] {
         if (store[name] === undefined) setStore(name, defaultValue)
         return [
           function getValue() {
-            return result.get(name)
+            return result.get(name, defaultValue)
           },
-          function setter(next: Setter<T | undefined>) {
+          function setter(next: Setter<T>) {
             result.set(name, next)
           },
         ] as const
       },
-      get<T>(key: string, defaultValue?: T) {
+      get: (<T,>(key: string, defaultValue?: T): T | undefined => {
         return (store[key] as T | undefined) ?? defaultValue
+      }) as {
+        <T,>(key: string): T | undefined
+        <T,>(key: string, defaultValue: T): T
       },
-      set<T>(key: string, value: Setter<T | undefined>) {
+      set<T>(key: string, value: T | ((prev: T | undefined) => T)) {
         const current = store[key] as T | undefined
-        const next = typeof value === "function" ? (value as (prev: T | undefined) => T | undefined)(current) : value
+        const next = typeof value === "function" ? (value as (prev: T | undefined) => T)(current) : value
         setStore(key, next)
         void Filesystem.writeJson(filePath, { ...store, [key]: next }).catch(() => {})
       },

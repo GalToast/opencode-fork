@@ -68,16 +68,15 @@ export function selectedForeground(theme: Theme, bg?: RGBA): RGBA {
   return theme.background
 }
 
-type HexColor = `#${string}`
 type RefName = string
 type Variant = {
-  dark: HexColor | RefName
-  light: HexColor | RefName
+  dark: RefName
+  light: RefName
 }
-type ColorValue = HexColor | RefName | Variant | RGBA
+type ColorValue = RefName | Variant | RGBA
 export type ThemeJson = {
   $schema?: string
-  defs?: Record<string, HexColor | RefName>
+  defs?: Record<string, string>
   theme: Omit<Record<ThemeColor, ColorValue>, "selectedListItemText" | "backgroundMenu"> & {
     selectedListItemText?: ColorValue
     backgroundMenu?: ColorValue
@@ -147,10 +146,6 @@ function listThemes() {
   }
 }
 
-function syncThemes() {
-  setStore("themes", listThemes())
-}
-
 const [store, setStore] = createStore<State>({
   themes: listThemes(),
   mode: "dark",
@@ -158,6 +153,10 @@ const [store, setStore] = createStore<State>({
   active: "opencode",
   ready: false,
 })
+
+function syncThemes() {
+  setStore("themes", listThemes())
+}
 
 export function allThemes() {
   return store.themes
@@ -331,7 +330,7 @@ export const { use: useTheme, provider: ThemeProvider } = createSimpleContext({
     function init() {
       if (process.env["OPENCODE_TUI_SKIP_PALETTE"] === "1") {
         setStore("ready", true)
-        getCustomThemes()
+        void getCustomThemes()
           .then((custom) => {
             customThemes = custom
             syncThemes()
@@ -342,7 +341,7 @@ export const { use: useTheme, provider: ThemeProvider } = createSimpleContext({
         return
       }
 
-      Promise.allSettled([
+      void Promise.allSettled([
         resolveSystemTheme(store.mode),
         getCustomThemes()
           .then((custom) => {
@@ -390,7 +389,7 @@ export const { use: useTheme, provider: ThemeProvider } = createSimpleContext({
       if (store.mode === mode) return
       setStore("mode", mode)
       renderer.clearPaletteCache()
-      resolveSystemTheme(mode)
+      void resolveSystemTheme(mode)
     }
 
     function pin(mode: "dark" | "light" = store.mode) {
@@ -446,8 +445,7 @@ export const { use: useTheme, provider: ThemeProvider } = createSimpleContext({
     return {
       theme: new Proxy(values(), {
         get(_target, prop) {
-          // @ts-expect-error
-          return values()[prop]
+          return values()[prop as keyof Theme]
         },
       }),
       get selected() {
@@ -526,7 +524,7 @@ function generateSystem(colors: TerminalColors, mode: "dark" | "light"): ThemeJs
   const bg = RGBA.fromHex(colors.defaultBackground ?? colors.palette[0]!)
   const fg = RGBA.fromHex(colors.defaultForeground ?? colors.palette[7]!)
   const transparent = RGBA.fromValues(bg.r, bg.g, bg.b, 0)
-  const isDark = mode == "dark"
+  const isDark = mode === "dark"
 
   const col = (i: number) => {
     const value = colors.palette[i]

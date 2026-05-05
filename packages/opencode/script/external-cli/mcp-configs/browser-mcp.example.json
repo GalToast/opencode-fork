@@ -1,0 +1,30 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "C:\\Users\\HP\\.codex\\mcp-runtimes\\launch-playwright-mcp.ps1"
+      ],
+      "env": {
+        "CODEX_MCP_FORCE_CLEAN_START": "1"
+      }
+    },
+    "chrome-devtools": {
+      "command": "C:\\windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "C:\\Users\\HP\\.codex\\mcp-runtimes\\launch-chrome-devtools-mcp.ps1"
+      ],
+      "env": {
+        "CODEX_MCP_FORCE_CLEAN_START": "1"
+      }
+    }
+  }
+}

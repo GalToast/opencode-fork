@@ -42,6 +42,13 @@ export const WriteTool = Tool.define("write", {
         diff,
       },
     })
+    ctx.metadata({
+      metadata: {
+        filepath,
+        diff,
+        exists,
+      },
+    })
 
     await Filesystem.write(filepath, params.content)
     await Format.file(filepath)
@@ -78,6 +85,7 @@ export const WriteTool = Tool.define("write", {
         diagnostics,
         filepath,
         exists: exists,
+        diff,
       },
       output,
     }

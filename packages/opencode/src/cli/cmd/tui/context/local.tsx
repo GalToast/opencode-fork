@@ -83,13 +83,13 @@ export const { use: useLocal, provider: LocalProvider } = createSimpleContext({
             setAgentStore("current", value.name)
           })
         },
-        color(name: string) {
-          const index = visibleAgents().findIndex((x) => x.name === name)
+        color(agentName: string) {
+          const index = visibleAgents().findIndex((x) => x.name === agentName)
           if (index === -1) return colors()[0]
-          const agent = visibleAgents()[index]
+          const agentColor = visibleAgents()[index]
 
-          if (agent?.color) {
-            const color = agent.color
+          if (agentColor?.color) {
+            const color = agentColor.color
             if (color.startsWith("#")) return RGBA.fromHex(color)
             // already validated by config, just satisfying TS here
             return theme[color as keyof typeof theme] as RGBA
@@ -137,18 +137,19 @@ export const { use: useLocal, provider: LocalProvider } = createSimpleContext({
           return
         }
         state.pending = false
-        Filesystem.writeJson(filePath, {
+        void Filesystem.writeJson(filePath, {
           recent: modelStore.recent,
           favorite: modelStore.favorite,
           variant: modelStore.variant,
         })
       }
 
-      Filesystem.readJson(filePath)
-        .then((x: any) => {
-          if (Array.isArray(x.recent)) setModelStore("recent", x.recent)
-          if (Array.isArray(x.favorite)) setModelStore("favorite", x.favorite)
-          if (typeof x.variant === "object" && x.variant !== null) setModelStore("variant", x.variant)
+      void Filesystem.readJson(filePath)
+        .then((x: unknown) => {
+          const data = x as Record<string, unknown>
+          if (Array.isArray(data.recent)) setModelStore("recent", data.recent as { providerID: string; modelID: string }[])
+          if (Array.isArray(data.favorite)) setModelStore("favorite", data.favorite as { providerID: string; modelID: string }[])
+          if (typeof data.variant === "object" && data.variant !== null) setModelStore("variant", data.variant as Record<string, string | undefined>)
         })
         .catch(() => {})
         .finally(() => {
@@ -188,11 +189,11 @@ export const { use: useLocal, provider: LocalProvider } = createSimpleContext({
         if (!provider) return undefined
         const defaultModel = sync.data.provider_default[provider.id]
         const firstModel = Object.values(provider.models)[0]
-        const model = defaultModel ?? firstModel?.id
-        if (!model) return undefined
+        const modelId = defaultModel ?? firstModel?.id
+        if (!modelId) return undefined
         return {
           providerID: provider.id,
-          modelID: model,
+          modelID: modelId,
         }
       })
 
@@ -281,19 +282,19 @@ export const { use: useLocal, provider: LocalProvider } = createSimpleContext({
           )
           save()
         },
-        set(model: { providerID: string; modelID: string }, options?: { recent?: boolean }) {
+        set(nextModel: { providerID: string; modelID: string }, options?: { recent?: boolean }) {
           batch(() => {
-            if (!isModelValid(model)) {
+            if (!isModelValid(nextModel)) {
               toast.show({
-                message: `Model ${model.providerID}/${model.modelID} is not valid`,
+                message: `Model ${nextModel.providerID}/${nextModel.modelID} is not valid`,
                 variant: "warning",
                 duration: 3000,
               })
               return
             }
-            setModelStore("model", agent.current().name, model)
+            setModelStore("model", agent.current().name, nextModel)
             if (options?.recent) {
-              const uniq = uniqueBy([model, ...modelStore.recent], (x) => `${x.providerID}/${x.modelID}`)
+              const uniq = uniqueBy([nextModel, ...modelStore.recent], (x) => `${x.providerID}/${x.modelID}`)
               if (uniq.length > 10) uniq.pop()
               setModelStore(
                 "recent",
@@ -303,22 +304,22 @@ export const { use: useLocal, provider: LocalProvider } = createSimpleContext({
             }
           })
         },
-        toggleFavorite(model: { providerID: string; modelID: string }) {
+        toggleFavorite(favModel: { providerID: string; modelID: string }) {
           batch(() => {
-            if (!isModelValid(model)) {
+            if (!isModelValid(favModel)) {
               toast.show({
-                message: `Model ${model.providerID}/${model.modelID} is not valid`,
+                message: `Model ${favModel.providerID}/${favModel.modelID} is not valid`,
                 variant: "warning",
                 duration: 3000,
               })
               return
             }
             const exists = modelStore.favorite.some(
-              (x) => x.providerID === model.providerID && x.modelID === model.modelID,
+              (x) => x.providerID === favModel.providerID && x.modelID === favModel.modelID,
             )
             const next = exists
-              ? modelStore.favorite.filter((x) => x.providerID !== model.providerID || x.modelID !== model.modelID)
-              : [model, ...modelStore.favorite]
+              ? modelStore.favorite.filter((x) => x.providerID !== favModel.providerID || x.modelID !== favModel.modelID)
+              : [favModel, ...modelStore.favorite]
             setModelStore(
               "favorite",
               next.map((x) => ({ providerID: x.providerID, modelID: x.modelID })),

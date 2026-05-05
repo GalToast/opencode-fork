@@ -10,6 +10,7 @@ function View(props: { api: TuiPluginApi; session_id: string }) {
   const list = createMemo(() => props.api.state.session.todo(props.session_id))
   const show = createMemo(() => list().length > 0 && list().some((item) => item.status !== "completed"))
 
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
   return (
     <Show when={show()}>
       <box>
@@ -22,22 +23,29 @@ function View(props: { api: TuiPluginApi; session_id: string }) {
           </text>
         </box>
         <Show when={list().length <= 2 || open()}>
-          <For each={list()}>{(item) => <TodoItem status={item.status} content={item.content} />}</For>
+          <For each={list()}>
+            {(item) => {
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+              return <TodoItem status={item.status} content={item.content} />
+            }}
+          </For>
         </Show>
       </box>
     </Show>
   )
 }
 
-const tui: TuiPlugin = async (api) => {
+const tui: TuiPlugin = (api) => {
   api.slots.register({
     order: 400,
     slots: {
       sidebar_content(_ctx, props) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
         return <View api={api} session_id={props.session_id} />
       },
     },
   })
+  return Promise.resolve()
 }
 
 const plugin: TuiPluginModule & { id: string } = {

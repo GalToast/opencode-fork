@@ -768,10 +768,10 @@ async function ensureMaterializedArtifacts(proposalID: string) {
   }
 }
 
-function resolveExisting(files: string[]) {
+async function resolveExisting(files: string[]) {
   const keep: string[] = []
   for (const file of files) {
-    if (Filesystem.exists(file)) keep.push(file)
+    if (await Filesystem.exists(file)) keep.push(file)
   }
   return keep
 }
@@ -789,11 +789,11 @@ async function sourceArtifacts(input: {
   const materializedTargets = materialized?.targets
     ?.map((target) => target.absolutePath)
     .filter((target): target is string => !!target)
-  const existingMaterializedTargets = materializedTargets ? resolveExisting(materializedTargets) : []
+  const existingMaterializedTargets = materializedTargets ? await resolveExisting(materializedTargets) : []
   if (existingMaterializedTargets.length > 0) return existingMaterializedTargets
 
   const files = input.proposal.expectedFiles ?? input.proposal.patchHint?.files ?? []
-  return resolveExisting(files.map((file) => resolveHarnessSourcePath(file, sourceRoot())))
+  return await resolveExisting(files.map((file) => resolveHarnessSourcePath(file, sourceRoot())))
 }
 
 function patchCandidatePaths(raw: string) {
@@ -1536,7 +1536,7 @@ export namespace HarnessGenerate {
       proposalPath,
     })
     const allowTools = sourceFiles.length === 0
-    const baseArtifacts = resolveExisting([proposalPath, promptPath])
+    const baseArtifacts = await resolveExisting([proposalPath, promptPath])
     let result:
       | Awaited<ReturnType<typeof runReadOnlyHarnessSession>>
       | undefined
@@ -1682,7 +1682,7 @@ export namespace HarnessGenerate {
       const sourceFirstRetryArtifacts =
         attempt > 1 && shouldUseSourceFirstRetryArtifacts(validationError)
       const baseAttemptArtifacts = sourceFirstRetryArtifacts ? [] : baseArtifacts
-      const exploreArtifacts = resolveExisting([
+      const exploreArtifacts = await resolveExisting([
         ...baseAttemptArtifacts,
         ...attemptSourceFiles,
         ...validationArtifacts,
@@ -1731,7 +1731,7 @@ export namespace HarnessGenerate {
       }
       if (runFailureDiagnosis && validationError) {
         try {
-          const diagnosisArtifacts = resolveExisting([
+          const diagnosisArtifacts = await resolveExisting([
             ...baseAttemptArtifacts,
             ...attemptSourceFiles,
             ...attempts.slice(-2).map((item) => item.rawPath),
@@ -1913,7 +1913,7 @@ export namespace HarnessGenerate {
             label: `generated.attempt-${attempt}`,
           })
         : []
-      const attemptArtifacts = resolveExisting([
+      const attemptArtifacts = await resolveExisting([
         ...baseAttemptArtifacts,
         ...snapshotArtifacts,
         ...(diagnosisArtifactPath ? [diagnosisArtifactPath] : []),
@@ -2220,7 +2220,7 @@ export namespace HarnessGenerate {
     Patch.parsePatch(patchText)
     await Filesystem.write(patchPath, patchText)
 
-    const reviewArtifacts = resolveExisting([proposalPath, patchPath, generationRawPath])
+    const reviewArtifacts = await resolveExisting([proposalPath, patchPath, generationRawPath])
     const reviewPrompt = reviewPromptText({
       proposal,
       artifacts: reviewArtifacts,
@@ -2506,7 +2506,7 @@ export namespace HarnessGenerate {
       sourceFiles,
       label: "review-repair",
     })
-    const artifactFiles = resolveExisting([
+    const artifactFiles = await resolveExisting([
       proposalPath,
       patchPath,
       generationRawPath,

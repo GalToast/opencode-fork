@@ -54,14 +54,14 @@ function createWorkerFetch(client: RpcClient): typeof fetch {
     let result: WorkerFetchResponse
     try {
       result = await withTimeout(
-        client.call<"fetch">("fetch", {
+        client.call("fetch", {
           url: request.url,
           method: request.method,
           headers: Object.fromEntries(request.headers.entries()),
           body,
         }),
         WORKER_FETCH_TIMEOUT_MS,
-      )
+      ) as WorkerFetchResponse
     } catch (error) {
       const detail = error instanceof Error ? error.message : String(error)
       throw new Error(`TUI worker fetch failed for ${request.method} ${request.url}: ${detail}`)
@@ -192,7 +192,7 @@ export const TuiThreadCommand = cmd({
         })
       })
 
-      const client = Rpc.client<typeof rpc>(worker)
+      const client = Rpc.client<typeof rpc>(worker as unknown as { postMessage: (data: string) => void | null; onmessage: ((ev: MessageEvent<string>) => unknown) | null })
       const error = (e: unknown) => {
         Log.Default.error(e)
       }
@@ -297,7 +297,6 @@ export const TuiThreadCommand = cmd({
             prompt,
             fork: args.fork,
           },
-          onExit: stop,
         })
       } finally {
         await stop()

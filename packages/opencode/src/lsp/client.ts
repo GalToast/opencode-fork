@@ -242,7 +242,7 @@ export namespace LSPClient {
             unsub?.()
           })
       },
-      shutdown() {
+      async shutdown() {
         l.info("shutting down")
         connection.end()
         connection.dispose()

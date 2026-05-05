@@ -13,6 +13,7 @@ export namespace Tool {
 
   export interface InitContext {
     agent?: Agent.Info
+    taskContext?: string
   }
 
   export type Context<M extends Metadata = Metadata> = {

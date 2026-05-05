@@ -16,7 +16,7 @@ export function capturePromptSnapshot<TPart>(input: {
   }
 }
 
-export function submitAsync(input: { sessionID?: string; async: boolean }) {
+export function submitAsync(_input: { sessionID?: string; async: boolean }) {
   return true
 }
 

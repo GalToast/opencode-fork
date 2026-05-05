@@ -11,7 +11,6 @@ type FileFindResponse = {
 }
 
 export function DialogTag(props: { onSelect?: (value: string) => void }) {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const client: OpencodeClient = useSDK().client
   const dialog = useDialog()
 
@@ -19,11 +18,11 @@ export function DialogTag(props: { onSelect?: (value: string) => void }) {
     filter: "",
   })
 
-  const [files] = createResource<string[]>(
-    () => [store.filter],
-    async () => {
+  const [files] = createResource(
+    () => store.filter,
+    async (filter): Promise<string[]> => {
       const result = (await client.find.files({
-        query: store.filter,
+        query: filter,
       })) as FileFindResponse
       if (result.error) return []
       const sliced = (result.data ?? []).slice(0, 5)

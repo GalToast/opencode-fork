@@ -50,7 +50,7 @@ function assistant(id: string, tokens: TokenArgs, cost = 0): AssistantMessage {
       created: 1,
       completed: 1,
     },
-  }
+  } as unknown as AssistantMessage
 }
 
 function assistantWithSparseTokens(id: string, tokens: SparseTokenArgs): AssistantMessage {
@@ -60,12 +60,12 @@ function assistantWithSparseTokens(id: string, tokens: SparseTokenArgs): Assista
     providerID: "openrouter",
     modelID: "qwen3.5-plus",
     cost: 0,
-    tokens,
+    tokens: tokens as AssistantMessage["tokens"],
     time: {
       created: 1,
       completed: 1,
     },
-  }
+  } as unknown as AssistantMessage
 }
 
 function user(id: string): Message {
@@ -145,7 +145,7 @@ describe("sidebar model context selection", () => {
               description: "Launch child worker",
             },
           },
-        } as Part,
+        } as unknown as Part,
       ],
     })
 

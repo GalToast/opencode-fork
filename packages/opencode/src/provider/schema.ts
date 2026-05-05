@@ -34,5 +34,12 @@ export const ModelID = modelIdSchema.pipe(
   withStatics((schema: typeof modelIdSchema) => ({
     make: (id: string) => schema.makeUnsafe(id),
     zod: z.string().pipe(z.custom<ModelID>()),
+    // Well-known model IDs
+    gpt45: schema.makeUnsafe("gpt-4.5"),
+    gpt4o: schema.makeUnsafe("gpt-4o"),
+    gpt4oMini: schema.makeUnsafe("gpt-4o-mini"),
+    claude37Sonnet: schema.makeUnsafe("claude-3-7-sonnet-20250619"),
+    claude35Sonnet: schema.makeUnsafe("claude-3-5-sonnet-20250619"),
+    claude35Haiku: schema.makeUnsafe("claude-3-5-haiku-20250619"),
   })),
 )
