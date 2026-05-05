@@ -1,3 +1,9 @@
+# OpenCodex implementation snapshot: [opencode-fork branch](https://github.com/GalToast/opencode-fork/tree/opencode-fork)
+
+For the current full OpenCodex fork, including task DAG orchestration, semantic retrieval/compaction, TUI proof artifacts, self-editing harness work, and passing verification notes, start with the [`opencode-fork`](https://github.com/GalToast/opencode-fork/tree/opencode-fork) branch.
+
+---
+
 # Fred's OpenCode Fork - Custom Skills, Launcher, and Agent Workflow Notes
 
 This is a fork of [OpenCode](https://github.com/anomalyco/opencode) used as an AI engineering workbench. The value here is not the upstream project itself; it is the custom skill library, launcher workflow, semantic retrieval notes, and agent coordination patterns layered on top.
