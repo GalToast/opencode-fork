@@ -1,10 +1,10 @@
-# OpenCodex - McCullough Digital Fork
+# OpenCodex by McCullough Digital
 
-> A serious AI coding agent built around task DAGs, scheduler lanes, semantic retrieval, and self-editing feedback loops.
+> A systems-oriented AI coding workbench built around task DAGs, scheduler lanes, semantic retrieval, stateful agent runtime, and self-editing evaluation loops.
 
 ## What This Is
 
-OpenCodex is a fork of OpenCode that adds or restores serious subsystems for orchestrating multi-turn coding work. This README presents the current restored fork honestly: focused proofs are strong, `packages/opencode` typecheck and TUI lint are currently clean, while live TUI capture remains active hardening work. The key additions over upstream are:
+OpenCodex is a fork of OpenCode that adds or restores subsystems for orchestrating multi-turn coding work. Human-in-the-loop operator controls mean session routes, plan state, and permission surfaces that let a person supervise, pause, redirect, and verify active agent work. This README presents the current restored fork honestly: focused proofs are strong, `packages/opencode` typecheck and TUI lint are currently clean, while live TUI capture remains active hardening work. The key additions over upstream are:
 
 ### Subagent Orchestration
 - **Task DAGs** - tasks declare explicit `depends_on` relationships; the scheduler skips dispatch while unmet dependencies exist and propagates `failed`/`canceled`/`missing` state upstream.
@@ -24,7 +24,7 @@ OpenCodex is a fork of OpenCode that adds or restores serious subsystems for orc
 - **Review** - a separate model reviews patches against the `VERIFY` contract and returns `APPROVE`/`REJECT` with concrete concerns. The reviewer lane is finish-now/no-prose/no-future-verification.
 - **Self-edit execution** - shadow-workspace isolation with `applyLive:false` verification, artifact inspection, and live source preservation guards.
 - **Blackboard** - shared working memory for multi-agent task coordination.
-- **Workbench tool** - registered `workbench` tool with a persistent session JavaScript runtime and create/list/inspect/replace/delete flow for ephemeral helper tools.
+- **Stateful agent workbench** - registered `workbench` tool with a persistent per-session JavaScript runtime and create/list/inspect/replace/delete flow for ephemeral helper tools.
 - **Counterpressure and seat-delegation** - harness fixtures for benchmarking solo vs. parallel vs. delegate vs. context-gathering decision quality.
 
 ### Runtime Surface Inventory
@@ -34,6 +34,7 @@ OpenCodex is a fork of OpenCode that adds or restores serious subsystems for orc
 - **Skill loading** - `skill` ranks, filters, and loads local `SKILL.md` bundles into the session.
 - **Core editing/search tools** - the fork keeps the normal file, patch, shell, web, and code search tool surface while adding OpenCodex coordination layers.
 - **Gated experimental tools** - `batch`, `lsp`, and `plan_exit` are registered only when their feature flags or config gates are active.
+- **Recovery and analysis utilities** - gap detection, semantic decision helpers, snapshot revert, diagnostics, and dependency explorer live in source but are documented separately when they are not default callable tools.
 
 See [../../docs/opencodex-runtime-surface.md](../../docs/opencodex-runtime-surface.md) for the source-backed inventory used to prevent README drift.
 

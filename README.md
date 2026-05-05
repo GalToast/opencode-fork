@@ -1,18 +1,20 @@
-## opencode-fork by McCullough Digital
+# OpenCodex by McCullough Digital
 
-This is the **opencode-fork** branch of [GalToast/opencode-fork](https://github.com/GalToast/opencode-fork/tree/opencode-fork), maintained by McCullough Digital as a practical OpenCodex fork of the upstream [opencode-ai](https://opencode.ai) project.
+This repository is the public `opencode-fork` branch of [GalToast/opencode-fork](https://github.com/GalToast/opencode-fork/tree/opencode-fork), maintained by McCullough Digital as **OpenCodex**: a systems-oriented fork of upstream [OpenCode](https://opencode.ai).
 
-OpenCodex is a practical AI coding workbench that extends OpenCode with operator supervision, task DAG orchestration, semantic retrieval, TUI proof artifacts, and self-editing harness experiments. The goal is not a cosmetic fork; it is a working surface for coordinating long-running agentic software work with clearer evidence, state, and recovery paths.
+OpenCodex shifts the surface from single-turn code assistance toward long-horizon, human-in-the-loop software work. It adds task DAG orchestration, durable tracker state, semantic retrieval and compaction, deterministic TUI proof artifacts, a stateful agent workbench runtime, and experimental self-editing harnesses with explicit caveats.
 
 ### What changed vs. upstream
 
-- **Operator / session surface** - session operator routes and plan state surfaces for supervising active work.
-- **Task DAG / subagent orchestration** - restored task dependency behavior with clearer CLI/TUI task progress.
+- **Operator / session surface** - human-in-the-loop routes and plan state surfaces for supervising active work.
+- **Task DAGs & durable task tracker** - dependency-aware task behavior, tracker tools, and clearer CLI/TUI task progress.
 - **Semantic retrieval & compaction** - retrieval policy, rerank, runtime, and compaction baton subsystems.
 - **TUI launcher proof** - render-proof and launcher smoke coverage for the terminal UI.
-- **Self-editing harness** - healer, reviewer, confidence, blackboard, and shadow-workspace harness subsystems.
-- **Workbench tool** - Node-backed persistent session runtime plus ephemeral helper creation through the registered `workbench` tool.
+- **Self-editing harness research** - healer, reviewer, confidence, blackboard, and shadow-workspace subsystems, guarded as active development.
+- **Stateful agent workbench** - Node-backed persistent session runtime plus ephemeral helper creation through the registered `workbench` tool.
 - **Typecheck / test stabilization** - `packages/opencode` typecheck and TUI lint are clean, with focused tool/TUI tests passing in the current publish prep.
+
+For the detailed feature guide and caveats, start with [packages/opencode/README.md](packages/opencode/README.md). For a source-backed tool inventory, see [docs/opencodex-runtime-surface.md](docs/opencodex-runtime-surface.md).
 
 ### Implementation Evidence
 
@@ -32,59 +34,16 @@ OpenCodex is a practical AI coding workbench that extends OpenCode with operator
 
 | Check | Result |
 |-------|--------|
-| `bun run typecheck` in `packages/opencode` | Passed |
-| `bun run lint:tui` in `packages/opencode` | Passed |
-| Focused TUI/tool tests | Passed, with one broad-run bash timeout passing on exact serial rerun |
-| Pre-push monorepo typecheck hook | Passed during publish prep |
+| `bun run typecheck` in `packages/opencode` | Passed during May 5, 2026 publish prep |
+| `bun run lint:tui` in `packages/opencode` | Passed during May 5, 2026 publish prep |
+| Focused TUI/tool tests | Passed during May 5, 2026 publish prep, with one broad-run bash timeout passing on exact serial rerun |
+| Pre-push monorepo typecheck hook | Passed during May 5, 2026 publish prep |
 
 ---
 
-<p align="center">
-  <a href="https://opencode.ai">
-    <picture>
-      <source srcset="packages/console/app/src/asset/logo-ornate-dark.svg" media="(prefers-color-scheme: dark)">
-      <source srcset="packages/console/app/src/asset/logo-ornate-light.svg" media="(prefers-color-scheme: light)">
-      <img src="packages/console/app/src/asset/logo-ornate-light.svg" alt="OpenCode logo">
-    </picture>
-  </a>
-</p>
-<p align="center">The open source AI coding agent.</p>
-<p align="center">
-  <a href="https://opencode.ai/discord"><img alt="Discord" src="https://img.shields.io/discord/1391832426048651334?style=flat-square&label=discord" /></a>
-  <a href="https://www.npmjs.com/package/opencode-ai"><img alt="npm" src="https://img.shields.io/npm/v/opencode-ai?style=flat-square" /></a>
-  <a href="https://github.com/anomalyco/opencode/actions/workflows/publish.yml"><img alt="Build status" src="https://img.shields.io/github/actions/workflow/status/anomalyco/opencode/publish.yml?style=flat-square&branch=dev" /></a>
-</p>
+### Upstream Base
 
-<p align="center">
-  <a href="README.md">English</a> |
-  <a href="README.zh.md">简体中文</a> |
-  <a href="README.zht.md">繁體中文</a> |
-  <a href="README.ko.md">한국어</a> |
-  <a href="README.de.md">Deutsch</a> |
-  <a href="README.es.md">Español</a> |
-  <a href="README.fr.md">Français</a> |
-  <a href="README.it.md">Italiano</a> |
-  <a href="README.da.md">Dansk</a> |
-  <a href="README.ja.md">日本語</a> |
-  <a href="README.pl.md">Polski</a> |
-  <a href="README.ru.md">Русский</a> |
-  <a href="README.bs.md">Bosanski</a> |
-  <a href="README.ar.md">العربية</a> |
-  <a href="README.no.md">Norsk</a> |
-  <a href="README.br.md">Português (Brasil)</a> |
-  <a href="README.th.md">ไทย</a> |
-  <a href="README.tr.md">Türkçe</a> |
-  <a href="README.uk.md">Українська</a> |
-  <a href="README.bn.md">বাংলা</a> |
-  <a href="README.gr.md">Ελληνικά</a> |
-  <a href="README.vi.md">Tiếng Việt</a>
-</p>
-
-[![OpenCode Terminal UI](packages/web/src/assets/lander/screenshot.png)](https://opencode.ai)
-
-> McCullough Digital maintains this fork as OpenCodex, with restored task DAG orchestration, semantic retrieval, TUI proof artifacts, and self-editing harness subsystems. See [packages/opencode/README.md](packages/opencode/README.md) for the fork-specific proof surface and current caveats.
-
----
+OpenCodex remains based on upstream OpenCode and keeps the upstream installation and platform notes below for compatibility context. The fork-specific proof surface is documented above and in [packages/opencode/README.md](packages/opencode/README.md).
 
 ### Installation
 

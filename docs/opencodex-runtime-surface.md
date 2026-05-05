@@ -45,10 +45,23 @@ Some source files implement useful analysis or recovery helpers but are not in t
 
 | Utility | Current status | Evidence |
 |---|---|---|
-| Gap detection | Source utility for noticing repeated failures or missing compound tools; not listed in `ToolRegistry` | `packages/opencode/src/tool/gap-detector.ts` |
-| Semantic decision / precedent | Source utilities for precedent-aware task decisions; not listed in `ToolRegistry` | `packages/opencode/src/tool/semantic-decision.ts`, `packages/opencode/src/tool/semantic-precedent.ts` |
-| Snapshot revert and diagnostics | Source utilities supporting snapshot restoration and LSP diagnostics; not listed in the default registry surface | `packages/opencode/src/tool/snapshot_revert.ts`, `packages/opencode/src/tool/diagnostics.ts` |
+| Gap detection | Source utility for noticing repeated failures, multi-step workarounds, missing capabilities, and slow paths; not listed in `ToolRegistry` | `packages/opencode/src/tool/gap-detector.ts` |
+| Semantic decision / precedent | Source utilities for priority classification, contradiction detection, and precedent-aware task decisions; not listed in `ToolRegistry` | `packages/opencode/src/tool/semantic-decision.ts`, `packages/opencode/src/tool/semantic-precedent.ts` |
+| Snapshot revert | Source utility with `Tool.define("snapshot_revert")` for pre-edit snapshots and restoration, but not present in the default registry list | `packages/opencode/src/tool/snapshot_revert.ts` |
+| Diagnostics collector | Source utility used by write/edit/apply-patch paths to collect LSP diagnostics with a short timeout; not a standalone default registry tool | `packages/opencode/src/tool/diagnostics.ts`, `packages/opencode/src/tool/apply_patch.ts`, `packages/opencode/src/tool/edit.ts`, `packages/opencode/src/tool/write.ts` |
 | Dependency explorer | Source utility with focused tests; not listed in the default registry surface | `packages/opencode/src/tool/dependency_explorer.ts`, `packages/opencode/test/tool/dependency_explorer.test.ts` |
+
+## Recovery & Analysis Utilities
+
+These utilities are implemented in source but are intentionally separated from the always-on tool inventory when they are not default callable tools. This keeps the public docs clear about what an agent can invoke directly today versus what exists as support code, gated functionality, or promotion candidates.
+
+| Utility | Description | Evidence |
+|---|---|---|
+| Gap detection | Observes repeated failures, multi-step workarounds, missing capabilities, and slow paths; surfaces gaps that could become new compound actions or tools | `packages/opencode/src/tool/gap-detector.ts` |
+| Semantic decision / precedent | Priority classification and contradiction detection for task decisions, plus precedent tracking for attention-aware routing | `packages/opencode/src/tool/semantic-decision.ts`, `packages/opencode/src/tool/semantic-precedent.ts` |
+| Snapshot revert | Pre-edit snapshot and restoration support with cleanup behavior; defined as a tool source file but not included in the default registry surface | `packages/opencode/src/tool/snapshot_revert.ts` |
+| Diagnostics collector | LSP diagnostics collection used by write/edit/apply-patch paths to report errors after file changes | `packages/opencode/src/tool/diagnostics.ts`, `packages/opencode/src/tool/apply_patch.ts`, `packages/opencode/src/tool/edit.ts`, `packages/opencode/src/tool/write.ts` |
+| Dependency explorer | LSP-backed dependency and symbol exploration utility with focused test coverage, not default registered | `packages/opencode/src/tool/dependency_explorer.ts`, `packages/opencode/test/tool/dependency_explorer.test.ts` |
 
 ## Documentation Gate
 
