@@ -38,16 +38,21 @@ export namespace Todo {
     Service,
     Effect.gen(function* () {
       const bus = yield* Bus.Service
+      const rootSessionID = Effect.fn("Todo.rootSessionID")(function* (sessionID: SessionID) {
+        const { HarnessBlackboard } = yield* Effect.promise(() => import("../harness/blackboard"))
+        return HarnessBlackboard.getRootID(sessionID) as SessionID
+      })
 
       const update = Effect.fn("Todo.update")(function* (input: { sessionID: SessionID; todos: Info[] }) {
+        const sessionID = yield* rootSessionID(input.sessionID)
         yield* Effect.sync(() =>
           Database.transaction((db) => {
-            db.delete(TodoTable).where(eq(TodoTable.session_id, input.sessionID)).run()
+            db.delete(TodoTable).where(eq(TodoTable.session_id, sessionID)).run()
             if (input.todos.length === 0) return
             db.insert(TodoTable)
               .values(
                 input.todos.map((todo, position) => ({
-                  session_id: input.sessionID,
+                  session_id: sessionID,
                   content: todo.content,
                   status: todo.status,
                   priority: todo.priority,
@@ -57,16 +62,17 @@ export namespace Todo {
               .run()
           }),
         )
-        yield* bus.publish(Event.Updated, input)
+        yield* bus.publish(Event.Updated, { ...input, sessionID })
       })
 
       const get = Effect.fn("Todo.get")(function* (sessionID: SessionID) {
+        const rootID = yield* rootSessionID(sessionID)
         const rows = yield* Effect.sync(() =>
           Database.use((db) =>
             db
               .select()
               .from(TodoTable)
-              .where(eq(TodoTable.session_id, sessionID))
+              .where(eq(TodoTable.session_id, rootID))
               .orderBy(asc(TodoTable.position))
               .all(),
           ),

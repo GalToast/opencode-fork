@@ -1,9 +1,9 @@
 import { describe, expect, spyOn, test } from "bun:test"
 import { Instance } from "../../src/project/instance"
+import { Session } from "../../src/session"
 import { Tracker } from "../../src/tracker/service"
 import { TaskStatus, TaskType } from "../../src/tracker/types"
 import { Todo } from "../../src/session/todo"
-import { Session } from "../../src/session"
 import {
   TrackerAddDependencyTool,
   TrackerCreateTaskTool,
@@ -24,18 +24,14 @@ const baseCtx = {
   ask: async () => {},
 }
 
-async function ensureSession(directory: string) {
-  try {
-    // @ts-ignore
-    await Session.createNext({
-      id: baseCtx.sessionID,
-      directory,
-    })
-  } catch (error: any) {
-    if (error?.message?.includes("UNIQUE constraint failed: session.id")) {
-      return
-    }
-    throw error
+async function ctxWithSession(title: string, overrides: Partial<typeof baseCtx> = {}) {
+  const session = await Session.create({ title })
+  return {
+    ...baseCtx,
+    sessionID: session.id,
+    messageID: `msg_${session.id}` as any,
+    callID: `call_${session.id}`,
+    ...overrides,
   }
 }
 
@@ -46,9 +42,9 @@ describe("tool.tracker", () => {
     await Instance.provide({
       directory: tmp.path,
       fn: async () => {
-        await ensureSession(tmp.path)
         const ask = spyOn({ ask: baseCtx.ask }, "ask")
         ask.mockResolvedValue(undefined)
+        const ctx = await ctxWithSession("tracker create task")
 
         const tool = await TrackerCreateTaskTool.init()
         const result = await tool.execute(
@@ -57,7 +53,7 @@ describe("tool.tracker", () => {
             description: "A test task description",
             type: TaskType.TASK,
           },
-          baseCtx,
+          ctx,
         )
 
         expect(result.title).toContain("Created")
@@ -75,9 +71,9 @@ describe("tool.tracker", () => {
     await Instance.provide({
       directory: tmp.path,
       fn: async () => {
-        await ensureSession(tmp.path)
         const ask = spyOn({ ask: baseCtx.ask }, "ask")
         ask.mockResolvedValue(undefined)
+        const ctx = await ctxWithSession("tracker todo sync")
 
         const tool = await TrackerCreateTaskTool.init()
         await tool.execute(
@@ -86,10 +82,10 @@ describe("tool.tracker", () => {
             description: "Should appear in todo list",
             type: TaskType.TASK,
           },
-          baseCtx,
+          ctx,
         )
 
-        const todos = await Todo.get(baseCtx.sessionID)
+        const todos = await Todo.get(ctx.sessionID)
         expect(todos.length).toBe(1)
         expect(todos[0].content).toContain("Sync task")
         expect(todos[0].status).toBe("pending")
@@ -138,9 +134,9 @@ describe("tool.tracker", () => {
     await Instance.provide({
       directory: tmp.path,
       fn: async () => {
-        await ensureSession(tmp.path)
         const ask = spyOn({ ask: baseCtx.ask }, "ask")
         ask.mockResolvedValue(undefined)
+        const ctx = await ctxWithSession("tracker recommended skills")
 
         const createTool = await TrackerCreateTaskTool.init()
         const created = await createTool.execute(
@@ -150,7 +146,7 @@ describe("tool.tracker", () => {
             type: TaskType.TASK,
             recommendedSkills: ["frontend-design"],
           },
-          baseCtx,
+          ctx,
         )
 
         expect(created.metadata.task?.metadata?.recommendedSkills).toEqual(["frontend-design"])
@@ -161,7 +157,7 @@ describe("tool.tracker", () => {
             id: created.metadata.task.id,
             recommendedSkills: ["frontend-design", "webapp-testing"],
           },
-          baseCtx,
+          ctx,
         )
 
         expect(updated.metadata.task?.metadata?.recommendedSkills).toEqual([

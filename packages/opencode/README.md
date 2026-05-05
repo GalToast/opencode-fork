@@ -24,7 +24,18 @@ OpenCodex is a fork of OpenCode that adds or restores serious subsystems for orc
 - **Review** - a separate model reviews patches against the `VERIFY` contract and returns `APPROVE`/`REJECT` with concrete concerns. The reviewer lane is finish-now/no-prose/no-future-verification.
 - **Self-edit execution** - shadow-workspace isolation with `applyLive:false` verification, artifact inspection, and live source preservation guards.
 - **Blackboard** - shared working memory for multi-agent task coordination.
+- **Workbench tool** - registered `workbench` tool with a persistent session JavaScript runtime and create/list/inspect/replace/delete flow for ephemeral helper tools.
 - **Counterpressure and seat-delegation** - harness fixtures for benchmarking solo vs. parallel vs. delegate vs. context-gathering decision quality.
+
+### Runtime Surface Inventory
+- **Coordination tools** - `task`, `tracker_*`, `todowrite`/`todoread`, and `blackboard_*` are registered runtime surfaces, not just implementation details. They cover dependency-aware delegation, durable task graphs, session-scoped todos, and shared lane memory.
+- **Workbench and helper synthesis** - `workbench` provides persistent session JavaScript execution through a Node child-process kernel plus ephemeral TypeScript helper lifecycle management. `synthesize` / `synthesize_tool` support reusable session-local helper tools.
+- **Semantic memory tools** - `recall` and `retrieval_status` expose retrieval state alongside the retrieval subsystem and semantic compaction baton.
+- **Skill loading** - `skill` ranks, filters, and loads local `SKILL.md` bundles into the session.
+- **Core editing/search tools** - the fork keeps the normal file, patch, shell, web, and code search tool surface while adding OpenCodex coordination layers.
+- **Gated experimental tools** - `batch`, `lsp`, and `plan_exit` are registered only when their feature flags or config gates are active.
+
+See [../../docs/opencodex-runtime-surface.md](../../docs/opencodex-runtime-surface.md) for the source-backed inventory used to prevent README drift.
 
 ### TUI and Launch Proof
 - **TUI render proof** - deterministic no-model capture of the real `DialogPlan` and `DialogTracker` Solid components with mocked TUI contexts. Produces committed character-frame, HTML, PNG, and slash-command dispatch artifacts under `docs/proof-artifacts/tui-render/`.
@@ -83,6 +94,12 @@ src/
     processor.ts          - prompt loop and continuation logic
   tool/
     task.ts               - task DAG, scheduler lane dispatch, depends_on
+    tracker.ts            - durable task graph facade
+    blackboard.ts         - shared coordination state tools
+    workbench.ts          - persistent runtime and ephemeral helper creation
+    node_repl.ts          - Node child-process kernel used by workbench exec
+    synthesize.ts         - session-local helper tool generation
+    skill.ts              - local skill bundle ranking and loading
   cli/cmd/tui/
     routes/session/       - DialogPlan, DialogTracker, permission dialogs
     component/prompt/     - prompt input
@@ -117,6 +134,7 @@ test/
 | Compaction | Token-based prune | Semantic baton: embedding-ranked chunks injected into summary |
 | Harness | Removed | Restored: proposals, confidence research, healer, review, self-edit |
 | Blackboard | - | Shared multi-agent working memory |
+| Workbench tool | - | Persistent runtime plus ephemeral helper tools for session-local experimentation |
 | Seat-delegation benchmarking | - | Solo/parallel/delegate/collect-more-context decision benchmarking |
 | Retrieval quality harness | - | 12 seeded scenarios x 22 policy variants with MRR/top-1/top-3 reporting |
 | TUI proof | - | Render and launch smoke proofs with committed frame artifacts; PTY capture currently reports inconclusive on Windows when only terminal initialization is emitted |

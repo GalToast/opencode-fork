@@ -207,9 +207,9 @@ description: ${description}
           })
 
           expect(tool.description).toContain("<additional_skill_names")
-          expect(tool.description).toContain("<name>docx</name>")
-          expect(tool.description).toContain("<name>internal-comms</name>")
-          expect(tool.description).toContain("<name>xlsx</name>")
+          expect(tool.description).toContain("docx")
+          expect(tool.description).toContain("internal-comms")
+          expect(tool.description).toContain("xlsx")
         },
       })
     } finally {

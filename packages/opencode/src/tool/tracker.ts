@@ -1,8 +1,7 @@
 import { Tracker, TrackerStorage } from "@/tracker/service"
-import { TaskStatus, TaskStatusSchema, TaskType, TaskTypeSchema } from "@/tracker/types"
+import { TaskStatus, TaskStatusSchema, TaskType, TaskTypeSchema, type TaskStatusValue } from "@/tracker/types"
 import { SkillRegistry } from "@/skill/registry"
 import { Bus } from "@/bus"
-import { Session } from "@/session"
 import { Todo } from "@/session/todo"
 import z from "zod"
 import { Tool } from "./tool"
@@ -23,6 +22,16 @@ async function askWrite(ctx: Tool.Context, permission: string) {
     always: [TrackerStorage.pattern()],
     metadata: {},
   })
+}
+
+async function syncTaskToTodo(sessionID: string, task: { id: string; title: string; status: TaskStatusValue }) {
+  const current = await Todo.get(sessionID as any)
+  const status = task.status === TaskStatus.CLOSED ? "completed" : task.status === TaskStatus.IN_PROGRESS ? "in_progress" : "pending"
+  const content = `[${task.id}] ${task.title}`
+  const next = current.some((todo) => todo.content === content)
+    ? current.map((todo) => (todo.content === content ? { ...todo, status } : todo))
+    : [...current, { content, status, priority: "medium" }]
+  await Todo.update({ sessionID: sessionID as any, todos: next })
 }
 
 export const TrackerCreateTaskTool = Tool.define("tracker_create_task", {
@@ -59,6 +68,7 @@ export const TrackerCreateTaskTool = Tool.define("tracker_create_task", {
       requiredSkills: params.requiredSkills,
       metadata: Object.keys(metadata).length ? metadata : undefined,
     })
+    await syncTaskToTodo(ctx.sessionID, task)
 
     return {
       title: `Created ${task.id}`,

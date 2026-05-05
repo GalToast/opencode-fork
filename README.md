@@ -11,6 +11,7 @@ OpenCodex is a practical AI coding workbench that extends OpenCode with operator
 - **Semantic retrieval & compaction** - retrieval policy, rerank, runtime, and compaction baton subsystems.
 - **TUI launcher proof** - render-proof and launcher smoke coverage for the terminal UI.
 - **Self-editing harness** - healer, reviewer, confidence, blackboard, and shadow-workspace harness subsystems.
+- **Workbench tool** - Node-backed persistent session runtime plus ephemeral helper creation through the registered `workbench` tool.
 - **Typecheck / test stabilization** - `packages/opencode` typecheck and TUI lint are clean, with focused tool/TUI tests passing in the current publish prep.
 
 ### Implementation Evidence
@@ -23,6 +24,8 @@ OpenCodex is a practical AI coding workbench that extends OpenCode with operator
 | Semantic retrieval | `packages/opencode/src/retrieval/` |
 | TUI / launcher proof | `packages/opencode/docs/proof-artifacts/tui-render/`, `packages/opencode/test/cli/tui-render-proof.test.tsx` |
 | Self-editing harness | `packages/opencode/src/harness/` |
+| Workbench tool | `packages/opencode/src/tool/workbench.ts`, `packages/opencode/test/tool/workbench.test.ts` |
+| Runtime surface inventory | [docs/opencodex-runtime-surface.md](docs/opencodex-runtime-surface.md) |
 | Publish hygiene | [docs/opencodex-publish-workflow.md](docs/opencodex-publish-workflow.md) |
 
 ### Verification Status
