@@ -45,6 +45,43 @@
 
 ---
 
+## opencode-fork by McCullough Digital
+
+This is the **opencode-fork** branch of [GalToast/opencode-fork](https://github.com/GalToast/opencode-fork/tree/opencode-fork), maintained by McCullough Digital as a practical OpenCodex fork of the upstream [opencode-ai](https://opencode.ai) project.
+
+### What changed vs. upstream
+
+- **Operator / session surface** - session operator routes and plan state surfaces for supervising active work
+- **Task DAG / subagent orchestration** - restored task dependency behavior with clearer CLI/TUI task progress
+- **Semantic retrieval & compaction** - retrieval policy, rerank, runtime, and compaction baton subsystems
+- **TUI launcher proof** - committed render-proof artifacts and launcher smoke coverage for the terminal UI
+- **Self-editing harness** - healer, reviewer, confidence, blackboard, and shadow-workspace harness subsystems
+- **Typecheck / test stabilization** - monorepo typecheck passes cleanly; focused test suite yields 101 pass / 1 todo / 0 fail
+
+### Proof to inspect
+
+| What | Where |
+|------|-------|
+| Fork capabilities & caveats | [packages/opencode/README.md](packages/opencode/README.md) |
+| Operator & session changes | `packages/opencode/src/server/routes/session.ts`, `packages/opencode/src/server/routes/experimental.ts`, `packages/opencode/src/session/plan-state.ts` |
+| DAG orchestration | `packages/opencode/src/tool/task.ts`, `packages/opencode/test/tool/task-dependencies.test.ts` |
+| Semantic retrieval | `packages/opencode/src/retrieval/` |
+| TUI / launcher | `packages/opencode/docs/proof-artifacts/tui-render/`, `packages/opencode/test/cli/tui-render-proof.test.tsx` |
+| Self-editing harness | `packages/opencode/src/harness/` |
+| Focused verification | `packages/opencode/test/server/session-operator-route.test.ts`, `packages/opencode/test/session/compaction.test.ts`, `packages/opencode/test/session/instruction.test.ts` |
+
+### Verification status
+
+| Check | Result |
+|-------|--------|
+| `bun run typecheck` | **passed** |
+| Focused test suite | **101 pass · 1 todo · 0 fail** |
+| Pre-push monorepo typecheck hook | **passed** before the unrelated full-history push failure |
+
+> The normal branch push initially failed because the public fork and local upstream-derived history were unrelated, causing GitHub to reject the large full-history pack. This branch is a clean publish snapshot with local verification preserved.
+
+---
+
 ### Installation
 
 ```bash
