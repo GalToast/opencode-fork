@@ -1,67 +1,74 @@
-# OpenCodex Recruiter Quickstart
+# OpenCodex in 5 Minutes
 
-This is the shortest inspection path for the McCullough Digital OpenCodex fork. It helps a reviewer quickly separate fork-specific systems work from upstream OpenCode.
+OpenCodex is a fork of upstream OpenCode that adds agent orchestration
+surfaces: task DAGs, a durable task tracker, semantic retrieval/compaction,
+a stateful workbench, and deterministic TUI proofs. This page is the
+shortest path to seeing the fork's own code actually run.
 
-## Upstream Boundary
+For the full file-by-file map of what the fork adds vs upstream, see
+[what-i-changed.md](what-i-changed.md).
 
-OpenCodex is built on the upstream OpenCode foundation. McCullough Digital maintains this fork to explore additional agent orchestration, durable state, retrieval, proof, and harness surfaces. Treat upstream installation, provider, and platform notes as inherited baseline context unless a linked OpenCodex document or source path calls out fork-specific work.
+## Proof path (no API keys, no network calls by the demo itself)
 
-## What This Shows
-
-OpenCodex is a systems-oriented AI coding workbench for long-horizon, human-in-the-loop software work. The strongest evidence is in coordination and runtime surfaces: task DAGs, durable tracker state, semantic retrieval and compaction, deterministic TUI proof artifacts, a stateful agent workbench runtime, and self-editing evaluation harnesses with explicit caveats.
-
-## Inspect First
-
-| Area | Why it matters | Start here |
-| --- | --- | --- |
-| Fork feature guide | Gives the fastest overview of changed behavior and caveats. | [packages/opencode/README.md](../packages/opencode/README.md) |
-| Runtime surface inventory | Lists fork-specific tools, harnesses, and boundaries. | [opencodex-runtime-surface.md](opencodex-runtime-surface.md) |
-| Stateful workbench | Shows persistent Node-backed agent sessions and helper creation. | `../packages/opencode/src/tool/workbench.ts`, `../packages/opencode/src/tool/node_repl.ts`, `../packages/opencode/test/tool/workbench.test.ts` |
-| Durable tracker | Shows persistent task state and tool-facing coordination. | `../packages/opencode/src/tool/tracker.ts`, `../packages/opencode/test/tool/tracker.test.ts` |
-| Task DAG orchestration | Shows dependency-aware task behavior and verification coverage. | `../packages/opencode/src/tool/task.ts`, `../packages/opencode/test/tool/task-dependencies.test.ts` |
-| Semantic retrieval | Shows retrieval policy, rerank, runtime, and compaction baton work. | `../packages/opencode/src/retrieval/` |
-| Self-editing harness | Shows the experimental healer, reviewer, confidence, and shadow-workspace systems. | `../packages/opencode/src/harness/` |
-| TUI proof artifacts | Shows deterministic terminal rendering proofs and related tests. | `../packages/opencode/docs/proof-artifacts/tui-render/`, `../packages/opencode/test/cli/tui-render-proof.test.tsx` |
-
-## Local Source Check
-
-Use the source tree when evaluating OpenCodex-specific changes. The upstream package manager and install commands may resolve baseline OpenCode instead of this branch.
+Prerequisites: [bun](https://bun.sh) 1.3.11+.
 
 ```bash
 git clone https://github.com/GalToast/opencode-fork.git
 cd opencode-fork
 git checkout opencode-fork
-bun install
-bun run --cwd packages/opencode typecheck
-bun run --cwd packages/opencode dev
+bun install --frozen-lockfile
 ```
 
-For a broad monorepo typecheck, run `bun run typecheck` from the repository root.
+Then run the one demo command (from the repo root):
 
-## Reading The TUI Proof
+```bash
+bun run --cwd packages/opencode script/tui-render-proof.tsx
+```
 
-The TUI proof artifacts are controlled test outputs, not marketing screenshots. Review the saved render artifacts beside `../packages/opencode/test/cli/tui-render-proof.test.tsx` to see what state was rendered, what the test expected, and how terminal UI behavior is kept inspectable during changes.
+What this does: it renders the fork's real Plan and Tracker TUI dialogs
+headlessly — no model, no network — and prints the frames to your terminal.
+You should see output starting with:
 
-## Verification Snapshot
+```
+=== DialogPlan ===
+     Plan
+     Status: Awaiting Approval
+...
+=== DialogTracker ===
+     Tracker  |  [L]ist / [D]AG
+...
+```
 
-Recent checks for the current publish-prep branch:
+It also writes the proof artifacts to
+`packages/opencode/tmp/tui-render-proof/` (frames as text, slash-command
+wiring and dispatch results as JSON). Open
+`packages/opencode/tmp/tui-render-proof/dialog-tracker-dag-frame.txt` to see
+the tracker in DAG mode.
 
-- Focused tool-surface test batch passed with no failures.
-- `bun run typecheck` in `packages/opencode` passed.
-- Compact publish worktree package typecheck passed.
-- Pre-push monorepo typecheck hook passed.
+The whole path — clone, install, demo — takes under five minutes on a
+typical connection.
+
+## What to look at next
+
+| If you want... | Start here |
+|---|---|
+| The feature/file map vs upstream | [what-i-changed.md](what-i-changed.md) |
+| Task DAGs (dependency-aware orchestration) | `packages/opencode/src/tool/task.ts`, `packages/opencode/test/tool/task-dependencies.test.ts` |
+| Durable tracker | `packages/opencode/src/tool/tracker.ts`, `packages/opencode/test/tool/tracker.test.ts` |
+| Semantic retrieval + compaction baton | `packages/opencode/src/retrieval/`, `packages/opencode/test/retrieval/` |
+| Stateful workbench | `packages/opencode/src/tool/workbench.ts`, `packages/opencode/test/tool/workbench.test.ts` |
+| Runtime surface inventory | [opencodex-runtime-surface.md](opencodex-runtime-surface.md) |
+
+## Verification
+
+Fork CI (`.github/workflows/opencodex.yml`) runs `bun run typecheck` in
+`packages/opencode` plus the focused tests for the fork's additions on every
+push to the `opencode-fork` branch. The inherited upstream workflows
+(`test.yml`, `typecheck.yml`) target upstream's `dev` branch and do not run
+here — their status is not evidence for this fork.
 
 ## Boundaries
 
-- Self-editing harnesses are active development surfaces and should be treated as opt-in, review-required research systems.
-- Live TUI capture and replay are still being hardened; deterministic proof artifacts are the stronger current evidence.
-- Local embeddings, model smoke tests, and some provider flows may require credentials or model files that are not committed to the public repo.
-- The upstream installation commands in the root README are kept for baseline OpenCode compatibility. Inspect or build this repository when evaluating OpenCodex-specific systems work.
-
-## Strongest Conversation Hooks
-
-- Stateful agent workbench runtime with persistent Node-backed sessions.
-- Durable task tracker and dependency-aware task DAG orchestration.
-- Semantic retrieval and compaction baton support for longer coding sessions.
-- Deterministic TUI proof artifacts instead of only screenshots.
-- Documentation that separates proven surfaces from active research.
+- The self-editing harness (`packages/opencode/src/harness/`) is active
+  research: opt-in and review-required, not a finished product.
+- Some provider/model flows need credentials that are not in this repo.
