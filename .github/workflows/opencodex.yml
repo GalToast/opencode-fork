@@ -1,0 +1,53 @@
+name: opencodex
+
+# OpenCodex fork checks: typecheck plus the focused tests that cover
+# Fred's fork-specific additions (task DAGs, durable tracker, semantic
+# retrieval/compaction, TUI proof, stateful workbench). This is deliberately
+# scoped to the fork surface -- it does not run the full upstream suite
+# (see .github/workflows/test.yml, which targets the upstream dev branch).
+
+on:
+  push:
+    branches: [opencode-fork]
+  pull_request:
+    branches: [opencode-fork]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  opencodex:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/opencode
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: ./.github/actions/setup-bun
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+        working-directory: .
+
+      - name: Typecheck (packages/opencode)
+        run: bun run typecheck
+
+      - name: Focused OpenCodex tests
+        run: >
+          bun test --timeout 30000
+          test/tool/task-dependencies.test.ts
+          test/tool/task-lane.test.ts
+          test/tool/tracker.test.ts
+          test/tool/workbench.test.ts
+          test/tool/blackboard.test.ts
+          test/tool/synthesize.test.ts
+          test/cli/tui-render-proof.test.tsx
+          test/retrieval/
