@@ -38,6 +38,7 @@ For a recruiter-facing inspection path, see [docs/recruiter-quickstart.md](docs/
 | `bun run lint:tui` in `packages/opencode` | Passed during May 5, 2026 publish prep |
 | Focused TUI/tool tests | Passed during May 5, 2026 publish prep, with one broad-run bash timeout passing on exact serial rerun |
 | Pre-push monorepo typecheck hook | Passed during May 5, 2026 publish prep |
+| Fresh-clone check (2026-10-01, commit d9433b2) | `bun install --frozen-lockfile` succeeds from a clean clone (2387 packages); `bun run typecheck` passes; the 5-minute proof command `bun run --cwd packages/opencode script/tui-render-proof.tsx` renders the documented Plan/Tracker frames and writes the documented artifacts; the CI focused suite passes 104/104 (0 fail). Full upstream suite not run — only the fork-scoped checks above are claimed. |
 
 ---
 
